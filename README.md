@@ -151,25 +151,7 @@ The goal is to create a caddie that learns how an individual golfer plays and pr
 - [ ] Create performance charts
 - [ ] Create golfer statistics dashboard
 
-### Phase 8: Recommendation Engine
-
-- [ ] Define recommendation inputs
-- [ ] Calculate adjusted distance
-- [ ] Account for wind
-- [ ] Account for elevation
-- [ ] Analyze club distances
-- [ ] Analyze shot dispersion
-- [ ] Analyze player tendencies
-- [ ] Analyze hazards
-- [ ] Calculate risk for each club
-- [ ] Calculate expected outcome
-- [ ] Compare possible clubs
-- [ ] Select recommended club
-- [ ] Select recommended target
-- [ ] Generate confidence/risk rating
-- [ ] Test recommendations against sample scenarios
-
-### Phase 9: AI Caddie
+### Phase 8: AI Caddie
 
 - [ ] Integrate OpenAI API
 - [ ] Create AI caddie prompt
@@ -184,7 +166,7 @@ The goal is to create a caddie that learns how an individual golfer plays and pr
 - [ ] Handle AI/API errors
 - [ ] Secure API credentials
 
-### Phase 10: Caddie Experience
+### Phase 9: Caddie Experience
 
 - [ ] Create active round dashboard
 - [ ] Display current hole
@@ -200,7 +182,7 @@ The goal is to create a caddie that learns how an individual golfer plays and pr
 - [ ] Improve mobile UI
 - [ ] Test on mobile devices
 
-### Phase 11: Testing
+### Phase 10: Testing
 
 - [ ] Write backend unit tests
 - [ ] Test API endpoints
@@ -218,7 +200,7 @@ The goal is to create a caddie that learns how an individual golfer plays and pr
 - [ ] Perform end-to-end testing
 - [ ] Fix bugs and edge cases
 
-### Phase 12: Security
+### Phase 11: Security
 
 - [ ] Secure password storage
 - [ ] Secure authentication tokens
@@ -234,7 +216,7 @@ The goal is to create a caddie that learns how an individual golfer plays and pr
 - [ ] Perform OWASP security review
 - [ ] Document security measures
 
-### Phase 13: Deployment
+### Phase 12: Deployment
 
 - [ ] Create production Docker configuration
 - [ ] Configure environment variables
@@ -250,7 +232,7 @@ The goal is to create a caddie that learns how an individual golfer plays and pr
 - [ ] Monitor application errors
 - [ ] Document deployment process
 
-### Phase 14: Evaluation
+### Phase 13: Evaluation
 
 - [ ] Collect test golfer data
 - [ ] Collect sample rounds
@@ -264,7 +246,7 @@ The goal is to create a caddie that learns how an individual golfer plays and pr
 - [ ] Collect user feedback
 - [ ] Make final improvements
 
-### Phase 15: Finalization
+### Phase 14: Finalization
 
 - [ ] Complete MVP
 - [ ] Complete stretch goals
