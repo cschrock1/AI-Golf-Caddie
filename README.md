@@ -33,15 +33,16 @@ The goal is to create a caddie that learns how an individual golfer plays and pr
 
 ## Project Timeline & To-Do
 
+The project will be developed in phases, with the goal of completing a functional MVP first. Additional features will be considered as stretch goals if time allows.
+
 ### Phase 1: Project Setup & Planning
 
 - [ ] Finalize project requirements
 - [ ] Define MVP features
 - [ ] Create system architecture
-- [ ] Create database schema
+- [ ] Design database schema
 - [ ] Design API structure
 - [ ] Set up GitHub repository
-- [ ] Set up project branches/workflow
 - [ ] Set up Vue 3 + TypeScript frontend
 - [ ] Set up Tailwind CSS
 - [ ] Set up Capacitor
@@ -61,97 +62,70 @@ The goal is to create a caddie that learns how an individual golfer plays and pr
 - [ ] Create hole schema
 - [ ] Create round schema
 - [ ] Create shot schema
-- [ ] Create weather data schema
 - [ ] Create database relationships
-- [ ] Create database seed data
+- [ ] Add sample course and golfer data
 - [ ] Build FastAPI project structure
 - [ ] Create API routes
 - [ ] Add Pydantic models
-- [ ] Add database connection
-- [ ] Test CRUD operations
+- [ ] Connect FastAPI to PostgreSQL
+- [ ] Test database operations
 
 ### Phase 3: User Accounts & Golfer Profiles
 
 - [ ] Create registration
 - [ ] Create login
 - [ ] Implement authentication
-- [ ] Implement authorization
 - [ ] Create user profile
 - [ ] Add handicap
 - [ ] Add preferred tees
 - [ ] Add golf clubs
 - [ ] Add club distances
 - [ ] Allow users to edit club information
-- [ ] Create golfer statistics page
+- [ ] Display golfer information
 
-### Phase 4: Golf Course System
+### Phase 4: Golf Course & Round System
 
 - [ ] Add golf course data
 - [ ] Add individual holes
 - [ ] Add tee locations
 - [ ] Add green locations
-- [ ] Add fairway geometry
-- [ ] Add bunker locations
-- [ ] Add water hazards
-- [ ] Add out-of-bounds areas
+- [ ] Add basic hazard locations
 - [ ] Add pin locations
 - [ ] Store geographic data using PostGIS
-- [ ] Integrate Mapbox
-- [ ] Display course map
-- [ ] Display individual hole maps
-- [ ] Display distances to targets
-- [ ] Test GPS coordinates
-
-### Phase 5: Round & Shot Tracking
-
 - [ ] Create new round
-- [ ] Select course
-- [ ] Select tees
+- [ ] Select course and tees
 - [ ] Track current hole
-- [ ] Record shots
-- [ ] Record club used
-- [ ] Record shot distance
-- [ ] Record shot location
-- [ ] Record shot result
-- [ ] Record penalties
-- [ ] Record lie
 - [ ] Complete individual holes
 - [ ] Complete rounds
 - [ ] Store round history
 - [ ] Display previous rounds
 
-### Phase 6: GPS & Weather
+### Phase 5: Shot Tracking
 
-- [ ] Implement device GPS through Capacitor
-- [ ] Get current golfer location
-- [ ] Calculate distance to pin
-- [ ] Calculate distance to hazards
-- [ ] Display current location on course map
-- [ ] Integrate Open-Meteo
-- [ ] Retrieve temperature
-- [ ] Retrieve wind speed
-- [ ] Retrieve wind direction
-- [ ] Retrieve weather conditions
-- [ ] Account for wind in distance calculations
-- [ ] Handle GPS/weather errors
-- [ ] Cache relevant course/weather data
+- [ ] Record shots
+- [ ] Record club used
+- [ ] Record shot distance
+- [ ] Record shot result
+- [ ] Record shot location
+- [ ] Record penalties
+- [ ] Allow users to edit/delete shots
+- [ ] Display shots for current hole
+- [ ] Display shots from previous rounds
 
-### Phase 7: Golf Analytics
+### Phase 6: Basic Caddie Recommendation Engine
 
-- [ ] Calculate scoring averages
-- [ ] Calculate fairway percentage
-- [ ] Calculate GIR percentage
-- [ ] Calculate putting averages
-- [ ] Calculate club averages
-- [ ] Calculate club accuracy
-- [ ] Identify common miss directions
-- [ ] Analyze performance by distance
-- [ ] Analyze performance by club
-- [ ] Analyze performance by hole
-- [ ] Create performance charts
-- [ ] Create golfer statistics dashboard
+- [ ] Define recommendation inputs
+- [ ] Calculate distance to target
+- [ ] Compare distance against club distances
+- [ ] Account for golfer's club preferences
+- [ ] Account for basic hazards
+- [ ] Consider golfer's historical performance
+- [ ] Recommend a club
+- [ ] Recommend a target
+- [ ] Provide a basic risk rating
+- [ ] Test recommendations with sample scenarios
 
-### Phase 8: AI Caddie
+### Phase 7: AI Caddie
 
 - [ ] Integrate OpenAI API
 - [ ] Create AI caddie prompt
@@ -159,111 +133,136 @@ The goal is to create a caddie that learns how an individual golfer plays and pr
 - [ ] Generate natural-language explanations
 - [ ] Explain club recommendations
 - [ ] Explain target recommendations
-- [ ] Explain risk/reward decisions
-- [ ] Generate pre-round strategy
-- [ ] Generate post-round analysis
-- [ ] Prevent AI from inventing player/course data
 - [ ] Handle AI/API errors
 - [ ] Secure API credentials
+- [ ] Prevent AI from inventing course or golfer data
 
-### Phase 9: Caddie Experience
+### Phase 8: Basic Analytics & Dashboard
 
-- [ ] Create active round dashboard
-- [ ] Display current hole
-- [ ] Display current GPS location
-- [ ] Display distance to pin
-- [ ] Display nearby hazards
-- [ ] Display weather conditions
-- [ ] Display recommended club
-- [ ] Display recommended target
-- [ ] Display recommendation explanation
-- [ ] Add alternative club options
-- [ ] Add shot tracking interface
-- [ ] Improve mobile UI
-- [ ] Test on mobile devices
+- [ ] Calculate scoring average
+- [ ] Calculate average score by hole
+- [ ] Calculate club usage
+- [ ] Calculate average club distance
+- [ ] Track fairways and greens when data is available
+- [ ] Track putting statistics when data is available
+- [ ] Display round history
+- [ ] Create basic performance charts
+- [ ] Create golfer statistics dashboard
 
-### Phase 10: Testing
+### Phase 9: Testing & Security
 
 - [ ] Write backend unit tests
 - [ ] Test API endpoints
 - [ ] Test database operations
 - [ ] Test recommendation engine
-- [ ] Test distance calculations
-- [ ] Test GPS functionality
-- [ ] Test weather integration
-- [ ] Test AI responses
 - [ ] Test authentication
-- [ ] Test authorization
 - [ ] Test invalid input
 - [ ] Test API failures
-- [ ] Test mobile application
-- [ ] Perform end-to-end testing
+- [ ] Validate API input
+- [ ] Configure CORS
+- [ ] Secure passwords
+- [ ] Secure API keys
+- [ ] Secure environment variables
+- [ ] Add authorization checks
+- [ ] Perform basic OWASP security review
 - [ ] Fix bugs and edge cases
 
-### Phase 11: Security
-
-- [ ] Secure password storage
-- [ ] Secure authentication tokens
-- [ ] Validate API input
-- [ ] Implement authorization checks
-- [ ] Configure CORS
-- [ ] Add API rate limiting
-- [ ] Secure environment variables
-- [ ] Protect API keys
-- [ ] Secure database credentials
-- [ ] Review PostGIS/database permissions
-- [ ] Enable HTTPS
-- [ ] Perform OWASP security review
-- [ ] Document security measures
-
-### Phase 12: Deployment
+### Phase 10: Deployment & Finalization
 
 - [ ] Create production Docker configuration
-- [ ] Configure environment variables
-- [ ] Configure production database
+- [ ] Configure production environment variables
+- [ ] Set up production database
 - [ ] Set up Google Cloud Run
 - [ ] Configure GitHub Actions
 - [ ] Create CI pipeline
-- [ ] Create deployment pipeline
-- [ ] Deploy backend
-- [ ] Deploy frontend
-- [ ] Configure production API
+- [ ] Deploy application
 - [ ] Test production environment
-- [ ] Monitor application errors
-- [ ] Document deployment process
-
-### Phase 13: Evaluation
-
-- [ ] Collect test golfer data
-- [ ] Collect sample rounds
-- [ ] Evaluate club recommendations
-- [ ] Compare recommendations against actual results
-- [ ] Measure recommendation accuracy
-- [ ] Analyze expected vs. actual outcomes
-- [ ] Identify weaknesses in the recommendation engine
-- [ ] Improve recommendation algorithm
-- [ ] Conduct user testing
-- [ ] Collect user feedback
-- [ ] Make final improvements
-
-### Phase 14: Finalization
-
-- [ ] Complete MVP
-- [ ] Complete stretch goals
 - [ ] Clean up codebase
-- [ ] Remove unused code
-- [ ] Improve documentation
+- [ ] Complete documentation
 - [ ] Update README
 - [ ] Document API
 - [ ] Document database design
-- [ ] Document recommendation algorithm
+- [ ] Document recommendation engine
 - [ ] Document AI architecture
-- [ ] Document security architecture
+- [ ] Document security measures
 - [ ] Create final project demo
 - [ ] Create presentation
 - [ ] Prepare capstone report
-- [ ] Record demonstration video
-- [ ] Final production deployment
+
+## Stretch Goals
+
+These features will only be developed after the core MVP is complete.
+
+### GPS & Maps
+
+- [ ] Integrate Mapbox
+- [ ] Implement device GPS through Capacitor
+- [ ] Display golfer's current location
+- [ ] Calculate distance to pin
+- [ ] Calculate distance to hazards
+- [ ] Display golfer location on course map
+- [ ] Add interactive hole maps
+- [ ] Add offline course data
+
+### Weather
+
+- [ ] Integrate Open-Meteo
+- [ ] Retrieve temperature
+- [ ] Retrieve wind speed
+- [ ] Retrieve wind direction
+- [ ] Display current weather
+- [ ] Account for wind in club recommendations
+- [ ] Account for temperature in club recommendations
+
+### Advanced Analytics
+
+- [ ] Calculate strokes gained
+- [ ] Analyze performance by club
+- [ ] Analyze performance by distance
+- [ ] Analyze performance by hole
+- [ ] Identify common miss directions
+- [ ] Identify areas for improvement
+- [ ] Generate personalized practice recommendations
+
+### Advanced Recommendation Engine
+
+- [ ] Monte Carlo shot simulations
+- [ ] Calculate expected score
+- [ ] Calculate probability of hazards
+- [ ] Model shot dispersion
+- [ ] Compare multiple shot strategies
+- [ ] Add conservative strategy
+- [ ] Add balanced strategy
+- [ ] Add aggressive strategy
+- [ ] Automatically update club distances based on shot history
+
+### Mobile & Caddie Experience
+
+- [ ] Improve mobile UI
+- [ ] Optimize active round interface
+- [ ] Add voice-based caddie
+- [ ] Add alternative club recommendations
+- [ ] Add real-time course information
+- [ ] Add smartwatch support
+- [ ] Add offline functionality
+
+### Future AI Features
+
+- [ ] AI pre-round strategy
+- [ ] AI post-round analysis
+- [ ] Personalized practice plans
+- [ ] AI conversation mode
+- [ ] Computer vision swing analysis
+- [ ] Automatic shot detection
+
+### Future Expansion
+
+- [ ] Support additional golf courses
+- [ ] Support multiple golfers
+- [ ] Coach accounts
+- [ ] Team accounts
+- [ ] Golf coach dashboard
+- [ ] Social/competition features
 
 ## MVP Definition
 
@@ -273,16 +272,17 @@ The minimum viable product will include:
 - [ ] Golfer profile
 - [ ] Club and distance management
 - [ ] Golf course and hole data
-- [ ] GPS location
-- [ ] Weather information
+- [ ] Round tracking
 - [ ] Shot tracking
-- [ ] Basic golf analytics
+- [ ] Basic golfer statistics
 - [ ] Personalized club recommendation
+- [ ] Basic target recommendation
 - [ ] AI recommendation explanation
 - [ ] Round history
-- [ ] Performance dashboard
+- [ ] Basic performance dashboard
 - [ ] Mobile-friendly interface
-
+- [ ] Basic security
+- [ ] Production deployment
 ## Final Goal
 
 The finished application should allow a golfer to start a round, use GPS and course information to determine their current situation, receive a personalized club and target recommendation, record the result of the shot, and use that information to improve future recommendations.
