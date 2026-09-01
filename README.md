@@ -4,8 +4,6 @@ An AI-powered golf caddie that helps golfers make smarter club and shot decision
 
 ## Overview
 
-AI Golf Caddie is a full-stack application designed to act as a personalized digital golf caddie.
-
 The system will allow golfers to:
 
 * Create a personal golf profile
@@ -34,10 +32,6 @@ The goal is to create a caddie that learns how an individual golfer plays and pr
 * [ ] GPS/course maps
 
 ## Project Timeline & To-Do
-
-## Project Timeline & To-Do
-
-The project will be developed in phases, starting with the core application and gradually adding GPS, weather, analytics, and AI capabilities.
 
 ### Phase 1: Project Setup & Planning
 
