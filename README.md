@@ -367,3 +367,33 @@ The long-term goal is to create a personalized golf caddie that becomes more acc
 ## License
 
 This project is for educational purposes.
+
+## Local Development
+
+Frontend:
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+Backend:
+
+```bash
+cd server
+python -m pip install -r ../server/requirements.txt
+uvicorn server.app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Docker (database + backend):
+
+```bash
+docker compose up --build
+```
+
+API Docs: http://localhost:8000/docs
+Health: http://localhost:8000/api/v1/health
+
+Security: Do not commit `.env` with secrets. Use `.env.example` as a template.
+

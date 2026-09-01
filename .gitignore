@@ -1,0 +1,22 @@
+/.env
+/.env.*
+!.env.example
+
+node_modules/
+dist/
+
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+.pytest_cache/
+.coverage
+htmlcov/
+
+.DS_Store
+
+*.log
+
+# Local VS Code settings (keep if not machine-specific)
+.vscode/
