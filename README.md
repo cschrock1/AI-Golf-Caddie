@@ -215,28 +215,6 @@ These features will only be developed after the core MVP is complete.
 - [ ] Account for wind in club recommendations
 - [ ] Account for temperature in club recommendations
 
-### Advanced Analytics
-
-- [ ] Calculate strokes gained
-- [ ] Analyze performance by club
-- [ ] Analyze performance by distance
-- [ ] Analyze performance by hole
-- [ ] Identify common miss directions
-- [ ] Identify areas for improvement
-- [ ] Generate personalized practice recommendations
-
-### Advanced Recommendation Engine
-
-- [ ] Monte Carlo shot simulations
-- [ ] Calculate expected score
-- [ ] Calculate probability of hazards
-- [ ] Model shot dispersion
-- [ ] Compare multiple shot strategies
-- [ ] Add conservative strategy
-- [ ] Add balanced strategy
-- [ ] Add aggressive strategy
-- [ ] Automatically update club distances based on shot history
-
 ### Mobile & Caddie Experience
 
 - [ ] Improve mobile UI
@@ -246,24 +224,6 @@ These features will only be developed after the core MVP is complete.
 - [ ] Add real-time course information
 - [ ] Add smartwatch support
 - [ ] Add offline functionality
-
-### Future AI Features
-
-- [ ] AI pre-round strategy
-- [ ] AI post-round analysis
-- [ ] Personalized practice plans
-- [ ] AI conversation mode
-- [ ] Computer vision swing analysis
-- [ ] Automatic shot detection
-
-### Future Expansion
-
-- [ ] Support additional golf courses
-- [ ] Support multiple golfers
-- [ ] Coach accounts
-- [ ] Team accounts
-- [ ] Golf coach dashboard
-- [ ] Social/competition features
 
 ## MVP Definition
 
