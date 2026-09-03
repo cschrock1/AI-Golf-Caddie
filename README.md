@@ -85,6 +85,17 @@ The project will be developed in phases, with the goal of completing a functiona
 
 ### Phase 4: Golf Course & Round System
 
+### GPS & Maps
+
+- [ ] Integrate Mapbox
+- [ ] Implement device GPS through Capacitor
+- [ ] Display golfer's current location
+- [ ] Calculate distance to pin
+- [ ] Calculate distance to hazards
+- [ ] Display golfer location on course map
+- [ ] Add interactive hole maps
+- [ ] Add offline course data
+      
 - [ ] Add golf course data
 - [ ] Add individual holes
 - [ ] Add tee locations
@@ -193,16 +204,6 @@ The project will be developed in phases, with the goal of completing a functiona
 
 These features will only be developed after the core MVP is complete.
 
-### GPS & Maps
-
-- [ ] Integrate Mapbox
-- [ ] Implement device GPS through Capacitor
-- [ ] Display golfer's current location
-- [ ] Calculate distance to pin
-- [ ] Calculate distance to hazards
-- [ ] Display golfer location on course map
-- [ ] Add interactive hole maps
-- [ ] Add offline course data
 
 ### Weather
 
