@@ -183,7 +183,7 @@ These features will only be developed after the core MVP is complete.
 - [ ] Add real-time course information
 - [ ] Add smartwatch support
 - [ ] Add offline functionality
-- [ ] 
+      
 ## MVP Definition
 
 The minimum viable product will include:
