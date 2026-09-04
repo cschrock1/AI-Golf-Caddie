@@ -21,6 +21,11 @@ class User(Base):
         nullable=False
     )
 
+    full_name: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True
+    )
+
     golfer_profile: Mapped["GolferProfile | None"] = relationship(
         back_populates="user",
         uselist=False
