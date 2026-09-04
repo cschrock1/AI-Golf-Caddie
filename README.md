@@ -149,46 +149,6 @@ The project will be developed in phases, with the goal of completing a functiona
 - [ ] Create basic performance charts
 - [ ] Create golfer statistics dashboard
 
-### Phase 9: Testing & Security
-
-- [ ] Write backend unit tests
-- [ ] Test API endpoints
-- [ ] Test database operations
-- [ ] Test recommendation engine
-- [ ] Test authentication
-- [ ] Test invalid input
-- [ ] Test API failures
-- [ ] Validate API input
-- [ ] Configure CORS
-- [ ] Secure passwords
-- [ ] Secure API keys
-- [ ] Secure environment variables
-- [ ] Add authorization checks
-- [ ] Perform basic OWASP security review
-- [ ] Fix bugs and edge cases
-
-### Phase 10: Deployment & Finalization
-
-- [ ] Create production Docker configuration
-- [ ] Configure production environment variables
-- [ ] Set up production database
-- [ ] Set up Google Cloud Run
-- [ ] Configure GitHub Actions
-- [ ] Create CI pipeline
-- [ ] Deploy application
-- [ ] Test production environment
-- [ ] Clean up codebase
-- [ ] Complete documentation
-- [ ] Update README
-- [ ] Document API
-- [ ] Document database design
-- [ ] Document recommendation engine
-- [ ] Document AI architecture
-- [ ] Document security measures
-- [ ] Create final project demo
-- [ ] Create presentation
-- [ ] Prepare capstone report
-
 ## Stretch Goals
 
 These features will only be developed after the core MVP is complete.
