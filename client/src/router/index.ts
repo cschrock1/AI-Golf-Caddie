@@ -4,6 +4,7 @@ import DashboardView from '../views/DashboardView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import LoginView from '../views/LoginView.vue'
 import ProfileView from '../views/ProfileView.vue'
+import ClubsView from '../views/ClubsView.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: HomeView },
@@ -11,6 +12,7 @@ const routes = [
   { path: '/register', name: 'Register', component: RegisterView },
   { path: '/login', name: 'Login', component: LoginView },
   { path: '/profile', name: 'Profile', component: ProfileView }
+  ,{ path: '/clubs', name: 'Clubs', component: ClubsView }
 ]
 
 const router = createRouter({

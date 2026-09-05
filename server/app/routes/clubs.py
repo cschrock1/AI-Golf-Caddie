@@ -5,6 +5,7 @@ from app.db.session import get_db
 from app.models.club import Club
 from app.models.user import User
 from app.schemas.club import ClubCreate, ClubResponse
+from app.core.security import get_current_user
 
 router = APIRouter(prefix="/clubs", tags=["Clubs"])
 
@@ -23,11 +24,15 @@ def get_clubs(
 def create_club(
     club: ClubCreate,
     user_id: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if current_user.id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to add club for this user")
 
     db_club = Club(
         user_id=user_id,
@@ -48,12 +53,13 @@ def update_club(
     club_id: int,
     club: ClubCreate,
     user_id: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     db_club = db.query(Club).filter(Club.id == club_id).first()
     if not db_club:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Club not found")
-    if db_club.user_id != user_id:
+    if db_club.user_id != user_id or current_user.id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to update this club")
 
     db_club.name = club.name
@@ -69,12 +75,13 @@ def update_club(
 def delete_club(
     club_id: int,
     user_id: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     db_club = db.query(Club).filter(Club.id == club_id).first()
     if not db_club:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Club not found")
-    if db_club.user_id != user_id:
+    if db_club.user_id != user_id or current_user.id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to delete this club")
 
     db.delete(db_club)
