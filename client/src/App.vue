@@ -1,16 +1,15 @@
 <template>
-  <div>
-    <Header />
+  <div class="min-h-screen bg-[#06110d] text-white antialiased">
     <router-view />
+    <BottomNav v-if="showBottomNav" />
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-import Header from './components/Header.vue'
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import BottomNav from './components/BottomNav.vue'
 
-export default defineComponent({
-  name: 'App',
-  components: { Header }
-})
+const route = useRoute()
+const showBottomNav = computed(() => !['/login', '/register'].includes(route.path))
 </script>

@@ -11,7 +11,7 @@ services:
     ports:
       - '5432:5432'
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-golf_user}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-golf_user} -d ${POSTGRES_DB:-ai_golf_caddie}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -21,8 +21,10 @@ services:
       context: .
       dockerfile: server/Dockerfile
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      APP_ENV: ${APP_ENV}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://golf_user:change_me@db:5432/ai_golf_caddie}
+      APP_ENV: ${APP_ENV:-development}
+      GOLF_API_KEY: ${GOLF_API_KEY}
+      GOLF_API_BASE_URL: ${GOLF_API_BASE_URL:-https://golfapi.io/api/v2.3}
     ports:
       - '8000:8000'
     depends_on:

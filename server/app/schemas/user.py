@@ -8,6 +8,12 @@ class UserCreate(BaseModel):
     password: str = Field(..., min_length=8)
 
 
+class LoginRequest(BaseModel):
+    email: Optional[EmailStr] = None
+    username: Optional[EmailStr] = None
+    password: str
+
+
 class UserResponse(BaseModel):
     id: int
     email: EmailStr
