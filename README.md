@@ -18,7 +18,7 @@ The goal is to create a caddie that learns how an individual golfer plays and pr
 
 ## Planned Features
 
-* [x] User authentication
+* [ ] User authentication
 * [ ] Golfer profile
 * [ ] Club and distance tracking
 * [ ] Golf course/hole information
@@ -37,38 +37,38 @@ The project will be developed in phases, with the goal of completing a functiona
 
 ### Phase 1: Project Setup & Planning
 
-- [ ] Finalize project requirements
-- [ ] Define MVP features
-- [ ] Create system architecture
-- [ ] Design database schema
-- [ ] Design API structure
-- [ ] Set up GitHub repository
-- [ ] Set up Vue 3 + TypeScript frontend
-- [ ] Set up Tailwind CSS
-- [ ] Set up Capacitor
-- [ ] Set up Python + FastAPI backend
-- [ ] Set up PostgreSQL + PostGIS
-- [ ] Set up Docker development environment
-- [ ] Create initial README documentation
+- [x] Finalize project requirements
+- [x] Define MVP features
+- [x] Create system architecture
+- [x] Design database schema
+- [x] Design API structure
+- [x] Set up GitHub repository
+- [x] Set up Vue 3 + TypeScript frontend
+- [x] Set up Tailwind CSS
+- [x] Set up Capacitor
+- [x] Set up Python + FastAPI backend
+- [x] Set up PostgreSQL + PostGIS
+- [x] Set up Docker development environment
+- [x] Create initial README documentation
 
 ### Phase 2: Database & Backend
 
-- [ ] Create PostgreSQL database
-- [ ] Configure PostGIS
-- [ ] Create user schema
-- [ ] Create golfer profile schema
-- [ ] Create club schema
-- [ ] Create course schema
-- [ ] Create hole schema
-- [ ] Create round schema
-- [ ] Create shot schema
-- [ ] Create database relationships
-- [ ] Add sample course and golfer data
-- [ ] Build FastAPI project structure
-- [ ] Create API routes
-- [ ] Add Pydantic models
-- [ ] Connect FastAPI to PostgreSQL
-- [ ] Test database operations
+- [x] Create PostgreSQL database
+- [x] Configure PostGIS
+- [x] Create user schema
+- [x] Create golfer profile schema
+- [x] Create club schema
+- [x] Create course schema
+- [x] Create hole schema
+- [x] Create round schema
+- [x] Create shot schema
+- [x] Create database relationships
+- [x] Add sample course and golfer data
+- [x] Build FastAPI project structure
+- [x] Create API routes
+- [x] Add Pydantic models
+- [x] Connect FastAPI to PostgreSQL
+- [x] Test database operations
 
 ### Phase 3: User Accounts & Golfer Profiles
 
