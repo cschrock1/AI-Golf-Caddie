@@ -18,7 +18,7 @@ The goal is to create a caddie that learns how an individual golfer plays and pr
 
 ## Planned Features
 
-* [ ] User authentication
+* [x] User authentication
 * [ ] Golfer profile
 * [ ] Club and distance tracking
 * [ ] Golf course/hole information
