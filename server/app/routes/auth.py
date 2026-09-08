@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.user import UserCreate, UserResponse, Token, UserUpdate
+from app.schemas.user import UserCreate, UserResponse, Token, UserUpdate, LoginRequest
 from app.core.security import get_password_hash, verify_password, create_access_token, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -28,14 +28,13 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/token", response_model=Token)
-def login(form_data: dict, db: Session = Depends(get_db)):
-    # Accept both OAuth2 form or simple JSON {"username":"...","password":"..."}
-    username = form_data.get("username") or form_data.get("email")
-    password = form_data.get("password")
-    if not username or not password:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing credentials")
-    user = db.query(User).filter(User.email == username).first()
-    if not user or not verify_password(password, user.password_hash):
+def login(credentials: LoginRequest, db: Session = Depends(get_db)):
+    email = credentials.email or credentials.username
+    if not email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email is required")
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user or not verify_password(credentials.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password")
 
     access_token_expires = timedelta(minutes=60)

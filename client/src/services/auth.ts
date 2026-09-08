@@ -8,7 +8,7 @@ export async function register(payload: { full_name?: string; email: string; pas
 }
 
 export async function login(payload: { email: string; password: string }) {
-  const res = await api.post('/auth/token', { username: payload.email, password: payload.password })
+  const res = await api.post('/auth/token', payload)
   const token = res.data.access_token
   if (token) {
     localStorage.setItem(TOKEN_KEY, token)
