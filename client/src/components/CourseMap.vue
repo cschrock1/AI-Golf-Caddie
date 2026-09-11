@@ -1,32 +1,25 @@
 <template>
-  <section class="rounded-[28px] border border-[#1d3a2d] bg-[#10271f] p-4 sm:p-5">
-    <div class="mb-3 flex items-center justify-between">
-      <div>
-        <p class="text-[10px] uppercase tracking-[0.24em] text-[#8ca49a]">GPS hole view</p>
-        <p class="mt-1 text-sm font-bold text-white">Live course position</p>
-      </div>
+  <section class="relative overflow-hidden rounded-[30px] border border-[#214335] bg-[#d9e1d8] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]">
+    <div ref="mapElement" class="h-[620px] w-full" role="img" aria-label="Interactive Mapbox GPS map showing the current golf hole"></div>
+
+    <div class="absolute right-3 top-3 z-10 flex gap-2">
       <button
         type="button"
-        class="rounded-full border border-[#315441] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[#dfeee6] transition hover:border-[#c8ff00] focus-visible:outline-none"
+        class="rounded-full border border-white/40 bg-black/25 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-white backdrop-blur-sm transition hover:bg-black/35"
         :disabled="isLocating"
         @click="locatePlayer"
       >
-        {{ isLocating ? 'Locating' : 'Locate me' }}
+        {{ isLocating ? 'Locating' : 'Locate' }}
       </button>
     </div>
 
-    <div ref="mapElement" class="h-80 overflow-hidden rounded-[24px] border border-[#214335] bg-[#d9e1d8]" role="img" aria-label="Interactive Mapbox GPS map showing the current golf hole"></div>
-    <p v-if="mapError" class="mt-3 text-xs leading-5 text-[#f7dfe2]" role="alert">{{ mapError }}</p>
-    <p v-if="locationError" class="mt-3 text-xs leading-5 text-[#f7dfe2]" role="alert">{{ locationError }}</p>
-    <div v-if="playerDistance !== null" class="mt-3 flex items-center justify-between rounded-2xl border border-[#c8ff00]/30 bg-[#142d20] px-3 py-3">
-      <span class="text-[10px] uppercase tracking-[0.18em] text-[#b8d8c8]">You to pin</span>
-      <strong class="text-xl font-black text-[#c8ff00]">{{ playerDistance }} <span class="text-[10px] tracking-[0.14em] text-[#b8d8c8]">YDS</span></strong>
+    <div v-if="playerDistance !== null" class="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full border border-white/30 bg-black/55 px-4 py-2 text-white shadow-lg backdrop-blur-sm">
+      <span class="text-[10px] uppercase tracking-[0.18em] text-white/75">You to pin</span>
+      <div class="mt-1 text-center text-xl font-black text-[#c8ff00]">{{ playerDistance }} <span class="text-[10px] tracking-[0.14em] text-white/75">YDS</span></div>
     </div>
-    <div class="mt-3 flex items-center justify-between text-[10px] uppercase tracking-[0.16em] text-[#8ca49a]">
-      <span><i class="legend-dot bg-[#173f31]"></i> tee</span>
-      <span><i class="legend-dot bg-[#c8ff00]"></i> pin</span>
-      <span><i class="legend-dot bg-[#2f80ed]"></i> you</span>
-    </div>
+
+    <p v-if="mapError" class="absolute inset-x-3 top-14 z-10 rounded-xl bg-black/55 p-2 text-[10px] leading-5 text-[#f7dfe2]" role="alert">{{ mapError }}</p>
+    <p v-if="locationError" class="absolute inset-x-3 top-14 z-10 rounded-xl bg-black/55 p-2 text-[10px] leading-5 text-[#f7dfe2]" role="alert">{{ locationError }}</p>
   </section>
 </template>
 

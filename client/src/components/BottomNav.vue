@@ -1,12 +1,12 @@
 <template>
-  <nav class="fixed inset-x-0 bottom-0 z-40 border-t border-[#1a352d] bg-[#071b14]/95 backdrop-blur-md">
+  <nav class="fixed inset-x-0 bottom-0 z-40 border-t border-[#bfd4b0] bg-[#f7faf4]/95 backdrop-blur-sm">
     <div class="mx-auto grid max-w-4xl grid-cols-4 gap-1 px-2 py-2 sm:gap-2">
       <button
         v-for="item in navItems"
         :key="item.to"
         type="button"
         class="flex flex-col items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-medium uppercase tracking-[0.15em] transition"
-        :class="isActive(item.to) ? 'bg-[#102d22] text-[#c8ff00]' : 'text-[#a7b8b0] hover:bg-[#0d2119] hover:text-white'"
+        :class="isActive(item.to) ? 'bg-[#1f5d3a] text-[#effae4]' : 'text-[#425a46] hover:bg-[#edf5ea] hover:text-[#183c2a]'"
         @click="go(item.to)"
       >
         <span class="mb-1 text-base" aria-hidden="true">{{ item.icon }}</span>
