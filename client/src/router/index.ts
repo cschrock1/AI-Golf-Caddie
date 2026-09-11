@@ -10,7 +10,7 @@ import { authStore } from '../stores/auth'
 import { getToken } from '../services/auth'
 
 const routes = [
-  { path: '/', redirect: '/dashboard' },
+  { path: '/', redirect: '/login' },
   { path: '/login', name: 'Login', component: LoginView },
   { path: '/register', name: 'Register', component: RegisterView },
   { path: '/dashboard', name: 'Dashboard', component: DashboardView, meta: { requiresAuth: true } },
@@ -38,7 +38,7 @@ router.beforeEach(async (to) => {
   }
 
   if ((to.path === '/login' || to.path === '/register') && isAuthenticated) {
-    return { path: '/dashboard' }
+    return { path: '/hole' }
   }
 })
 
