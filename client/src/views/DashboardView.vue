@@ -22,11 +22,13 @@
       </div>
     </section>
 
+    <CourseSearch class="mt-6" @select="selectCourse" />
+
     <section class="mt-6 rounded-[28px] border border-[#bfd4b0] bg-[#f7faf4] p-5 shadow-[0_18px_35px_rgba(24,60,42,0.08)]">
       <div class="flex items-center justify-between">
         <div>
           <p class="text-[10px] uppercase tracking-[0.24em] text-[#5d7159]">Recent round</p>
-          <h2 class="mt-2 text-2xl font-black text-[#183c2a]">Pebble Beach</h2>
+          <h2 class="mt-2 text-2xl font-black text-[#183c2a]">Stonehedge Golf Course</h2>
         </div>
         <span class="rounded-full border border-[#cddcc0] bg-[#edf5ea] px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-[#1e5d3f]">Score 74</span>
       </div>
@@ -34,7 +36,7 @@
       <div class="mt-5 grid gap-3 sm:grid-cols-3">
         <div class="rounded-2xl border border-[#d9e6d0] bg-[#edf5ea] p-3">
           <p class="text-[10px] uppercase tracking-[0.16em] text-[#5d7159]">Course</p>
-          <p class="mt-2 text-base font-bold text-[#183c2a]">Pebble Beach</p>
+          <p class="mt-2 text-base font-bold text-[#183c2a]">Stonehedge Golf Course</p>
         </div>
         <div class="rounded-2xl border border-[#d9e6d0] bg-[#edf5ea] p-3">
           <p class="text-[10px] uppercase tracking-[0.16em] text-[#5d7159]">Date</p>
@@ -68,8 +70,11 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '../components/AppHeader.vue'
+import CourseSearch from '../components/CourseSearch.vue'
 import { authStore } from '../stores/auth'
 import { getGolferProfile, getRounds } from '../services/api'
+import { roundStore } from '../stores/round'
+import type { Course } from '../types'
 
 const router = useRouter()
 const rounds = ref<Array<{ score?: number | null }>>([])
@@ -81,6 +86,10 @@ const averageScore = computed(() => {
   return Math.round(total / rounds.value.length)
 })
 const handicap = ref('—')
+
+function selectCourse(course: Course) {
+  roundStore.setCourse(course)
+}
 
 onMounted(async () => {
   const me = authStore.user.value

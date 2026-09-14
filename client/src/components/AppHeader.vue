@@ -1,6 +1,6 @@
 <template>
-  <header class="border-b border-[#1d3a2d] bg-[#081d16]/90 backdrop-blur-sm">
-    <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
+  <header class="border-b border-[#1d3a2d] bg-[#081d16]/90 backdrop-blur-sm" :class="compact ? 'gps-header-compact' : ''">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6" :class="compact ? 'py-2.5' : ''">
       <div class="flex items-center gap-3">
         <div class="flex h-8 w-8 items-center justify-center rounded-lg border border-[#2a4b3f] bg-[#102d22] text-sm font-bold text-[#c8ff00]">A</div>
         <div>
@@ -28,15 +28,11 @@
       </div>
     </div>
 
-    <div v-if="courseName || holeLabel" class="mx-auto max-w-6xl border-t border-[#17382d] px-4 py-3 text-sm text-[#d4e0d8] sm:px-6">
+    <div v-if="!compact && (courseName || holeLabel)" class="mx-auto max-w-6xl border-t border-[#17382d] px-4 py-3 text-sm text-[#d4e0d8] sm:px-6">
       <div class="flex items-center justify-between gap-3">
         <div>
           <p class="text-[10px] uppercase tracking-[0.26em] text-[#8ca49a]">Current round</p>
-          <p class="mt-1 text-base font-semibold text-white">{{ courseName || 'Pebble Beach' }}</p>
-        </div>
-        <div class="text-right">
-          <p class="text-[10px] uppercase tracking-[0.24em] text-[#8ca49a]">Hole</p>
-          <p class="mt-1 text-base font-semibold text-[#c8ff00]">{{ holeLabel || 'Hole 7' }}</p>
+          <p class="mt-1 text-base font-semibold text-white">{{ courseName || 'Stonehedge Golf Course' }}</p>
         </div>
       </div>
     </div>
@@ -48,9 +44,10 @@ withDefaults(
   defineProps<{
     courseName?: string
     holeLabel?: string
+    compact?: boolean
   }>(),
   {
-    courseName: 'Pebble Beach',
+    courseName: 'Stonehedge Golf Course',
     holeLabel: 'Hole 7'
   }
 )

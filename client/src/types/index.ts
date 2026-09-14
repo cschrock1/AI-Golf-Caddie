@@ -57,6 +57,7 @@ export interface Course {
   name: string
   city?: string | null
   state?: string | null
+  map_center?: [number, number]
   holes?: Hole[]
 }
 
