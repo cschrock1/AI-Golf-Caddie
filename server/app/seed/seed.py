@@ -51,24 +51,45 @@ def seed(engine_url: str = None):
             db.commit()
 
         # development course + holes
-        course = db.query(Course).filter(Course.name == 'Pebble Beach').first()
+        course = db.query(Course).filter(Course.name == 'Stonehedge Golf Course').first()
         if not course:
-            course = Course(name='Pebble Beach', city='Pebble Beach', state='CA')
+            course = Course(name='Stonehedge Golf Course', city='Warsaw', state='IN')
             db.add(course)
             db.commit()
             db.refresh(course)
 
-        for i in range(1, 19):
+        hole_specs = {
+            1: (4, 390),
+            2: (5, 510),
+            3: (4, 415),
+            4: (3, 175),
+            5: (4, 386),
+            6: (5, 525),
+            7: (4, 432),
+            8: (3, 168),
+            9: (5, 535),
+            10: (4, 397),
+            11: (3, 158),
+            12: (4, 420),
+            13: (5, 548),
+            14: (4, 401),
+            15: (3, 172),
+            16: (4, 448),
+            17: (4, 413),
+            18: (5, 520),
+        }
+
+        for hole_number, (par, yardage) in hole_specs.items():
             hole = db.query(Hole).filter(
                 Hole.course_id == course.id,
-                Hole.hole_number == i
+                Hole.hole_number == hole_number
             ).first()
             if not hole:
                 db.add(Hole(
                     course_id=course.id,
-                    hole_number=i,
-                    par=3 if i == 7 else (4 if i % 3 != 0 else 3),
-                    yardage=107 if i == 7 else 350 - (i * 5)
+                    hole_number=hole_number,
+                    par=par,
+                    yardage=yardage
                 ))
         db.commit()
 

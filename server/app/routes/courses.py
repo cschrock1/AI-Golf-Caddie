@@ -13,9 +13,7 @@ from app.schemas.course import (
     CourseResponse,
     HoleCreate,
     HoleResponse,
-    ProviderCourseImport,
 )
-from app.services.golf_api import GolfApiError, import_course as import_provider_course
 
 router = APIRouter(prefix="/courses", tags=["Courses"])
 
@@ -134,18 +132,6 @@ def import_course(
         "course": course,
         "imported_holes": len(converted_holes),
     }
-
-
-@router.post("/import/provider", response_model=CourseImportResponse)
-def import_course_from_provider(
-    payload: ProviderCourseImport,
-    db: Session = Depends(get_db),
-):
-    try:
-        imported_course = import_provider_course(payload.name, payload.city, payload.state)
-        return import_course(CourseImport.model_validate(imported_course), db)
-    except GolfApiError as error:
-        raise HTTPException(status_code=502, detail=str(error)) from error
 
 
 @router.post("/", response_model=CourseResponse, status_code=status.HTTP_201_CREATED)

@@ -1,6 +1,6 @@
 <template>
-  <div class="mx-auto max-w-6xl px-4 pb-36 pt-4 sm:px-6 sm:pt-6">
-    <AppHeader :course-name="courseName" :hole-label="`Hole ${holeNumber}`" />
+  <div class="pb-28 pt-4 sm:pt-6">
+    <AppHeader :course-name="courseName" :hole-label="`Hole ${holeNumber}`" compact />
 
     <div v-if="isLoading" class="mt-5 space-y-5" aria-live="polite" aria-label="Loading golf data">
       <div class="h-40 animate-pulse rounded-[28px] border border-[#1d3a2d] bg-[#0d2119]"></div>
@@ -14,6 +14,46 @@
     </div>
 
     <template v-else>
+    <section class="relative mt-4 overflow-hidden border-y border-[#214335] bg-[#10271f] sm:mt-6">
+      <CourseMap :hole="hole" :course="course" :full-screen="true" />
+
+      <div class="pointer-events-none absolute inset-x-3 top-3 z-20 flex items-start justify-between gap-2 sm:inset-x-5 sm:top-5">
+        <div class="pointer-events-auto rounded-[22px] border border-white/15 bg-[#101914]/90 px-4 py-3 text-white shadow-xl backdrop-blur-md">
+          <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-[#b8d8c8]">Stonehedge Golf Course</p>
+          <div class="mt-1 flex items-end gap-3">
+            <p class="text-4xl font-black leading-none">{{ holeNumber }}</p>
+            <div class="pb-0.5 text-xs text-white/75">
+              <span class="font-bold text-white">Par {{ par }}</span>
+              <span class="mx-1.5 text-white/35">·</span>
+              {{ pinDistance }} YDS
+            </div>
+          </div>
+        </div>
+        <div class="pointer-events-auto flex gap-2">
+          <button type="button" class="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-[#101914]/90 text-2xl text-white shadow-xl backdrop-blur-md disabled:opacity-40" aria-label="Previous hole" :disabled="holeNumber === 1" @click="selectHole(holeNumber - 1)">‹</button>
+          <button type="button" class="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-[#101914]/90 text-2xl text-white shadow-xl backdrop-blur-md disabled:opacity-40" aria-label="Next hole" :disabled="holeNumber === holes.length" @click="selectHole(holeNumber + 1)">›</button>
+        </div>
+      </div>
+
+      <div class="absolute inset-x-3 bottom-20 z-20 sm:inset-x-5">
+        <div class="flex items-center gap-2 overflow-x-auto rounded-2xl border border-white/15 bg-[#101914]/90 p-2 shadow-xl backdrop-blur-md" aria-label="Select hole">
+          <button
+            v-for="courseHole in holes"
+            :key="courseHole.hole_number"
+            type="button"
+            class="h-9 min-w-9 rounded-xl px-2 text-xs font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c8ff00]"
+            :class="courseHole.hole_number === holeNumber ? 'bg-[#c8ff00] text-[#07140f]' : 'text-white/80 hover:bg-white/10'"
+            :aria-label="`Select hole ${courseHole.hole_number}`"
+            :aria-pressed="courseHole.hole_number === holeNumber"
+            @click="selectHole(courseHole.hole_number)"
+          >
+            {{ courseHole.hole_number }}
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <div class="mx-auto max-w-6xl px-4 sm:px-6">
     <section class="mt-5 rounded-[28px] border border-[#1d3a2d] bg-[#0d2119] p-4 shadow-[0_16px_32px_rgba(2,10,7,0.18)] sm:p-5">
       <div class="flex items-end justify-between gap-4">
         <div>
@@ -54,8 +94,6 @@
         :note="conditions.note"
       />
 
-      <CourseMap class="lg:col-start-1 lg:row-span-2 lg:row-start-1" :hole="hole" />
-
       <RecommendationCard
         class="lg:col-start-2 lg:row-start-2"
         :club-name="recommendation.clubName"
@@ -86,6 +124,7 @@
         Dispersion will show your typical left and right miss pattern here once shot history is connected.
       </div>
     </section>
+    </div>
     </template>
 
     <div v-if="showBag" class="fixed inset-0 z-50 flex items-end justify-center bg-[#020806]/75 p-3 sm:items-center" @click.self="showBag = false">
@@ -111,18 +150,19 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '../components/AppHeader.vue'
 import RecommendationCard from '../components/RecommendationCard.vue'
 import ConditionsCard from '../components/ConditionsCard.vue'
 import CourseMap from '../components/CourseMap.vue'
-import { demoHole } from '../mock/hole'
+import { demoHole, stonehedgeHoles } from '../mock/hole'
 import { roundStore } from '../stores/round'
 import { authStore } from '../stores/auth'
-import { getClubs, getCourses, getGolferProfile, getHole } from '../services/api'
+import { getClubs, getCourses, getCourseHoles, getGolferProfile, getHole } from '../services/api'
 import type { Club, Course, GolferProfile, Hole } from '../types'
 
 const router = useRouter()
+const route = useRoute()
 const showDispersion = ref(false)
 const showBag = ref(false)
 const isLocked = ref(false)
@@ -131,6 +171,7 @@ const isLoading = ref(true)
 const error = ref('')
 const course = ref<Course | null>(null)
 const hole = ref<Hole | null>(null)
+const holes = ref<Hole[]>(stonehedgeHoles)
 const profile = ref<GolferProfile | null>(null)
 const bagOptions = ref<Array<{ name: string; carry: number }>>([
   { name: '9-Iron', carry: 112 },
@@ -138,7 +179,12 @@ const bagOptions = ref<Array<{ name: string; carry: number }>>([
   { name: '8-Iron', carry: 124 }
 ])
 
-const holeNumber = demoHole.holeNumber
+const holeNumber = computed(() => {
+  const requestedHole = Number(route.query.hole)
+  return Number.isInteger(requestedHole) && requestedHole >= 1 && requestedHole <= holes.value.length
+    ? requestedHole
+    : demoHole.holeNumber
+})
 const courseName = computed(() => course.value?.name || 'Golf course')
 const par = computed(() => hole.value?.par ?? 0)
 const handicap = computed(() => profile.value?.handicap ?? '—')
@@ -155,14 +201,43 @@ async function loadHoleData() {
 
   try {
     const coursesResponse = await getCourses()
-    const selectedCourse = (coursesResponse.data as Course[]).find((item) => item.name === demoHole.courseName) || coursesResponse.data[0]
-    if (!selectedCourse) throw new Error('No courses available')
+    const availableCourses = coursesResponse.data as Course[]
+    const requestedCourseId = Number(route.query.course)
+    const selectedCourse = roundStore.selectedCourse.value
+      || availableCourses.find((item) => item.id === requestedCourseId)
+      || availableCourses.find((item) => item.name === demoHole.courseName)
+      || availableCourses[0]
+    course.value = selectedCourse || { id: 5, name: demoHole.courseName, city: 'Warsaw', state: 'IN' }
 
-    const holeResponse = await getHole(selectedCourse.id, holeNumber)
-    course.value = selectedCourse
-    hole.value = holeResponse.data
+    if (selectedCourse?.id) {
+      const courseHolesResponse = await getCourseHoles(selectedCourse.id)
+      const apiHoles = courseHolesResponse.data as Hole[]
+      if (apiHoles.length) holes.value = apiHoles.sort((first, second) => first.hole_number - second.hole_number)
+    }
+
+    if (selectedCourse && !selectedCourse.id) {
+      holes.value = stonehedgeHoles
+      hole.value = stonehedgeHoles.find((item) => item.hole_number === holeNumber.value) || stonehedgeHoles[demoHole.holeNumber - 1]
+      return
+    }
+
+    const localHole = holes.value.find((item) => item.hole_number === holeNumber.value)
+    if (!localHole) throw new Error('Hole not found')
+
+    if (selectedCourse) {
+      try {
+        const holeResponse = await getHole(selectedCourse.id, holeNumber.value)
+        hole.value = { ...localHole, ...holeResponse.data }
+      } catch {
+        hole.value = localHole
+      }
+    } else {
+      hole.value = localHole
+    }
   } catch {
-    error.value = 'Unable to load golf data. Please try again.'
+    course.value = { id: 5, name: demoHole.courseName, city: 'Warsaw', state: 'IN' }
+    holes.value = stonehedgeHoles
+    hole.value = stonehedgeHoles.find((item) => item.hole_number === holeNumber.value) || stonehedgeHoles[demoHole.holeNumber - 1]
   } finally {
     isLoading.value = false
   }
@@ -194,6 +269,14 @@ watch(() => authStore.user.value?.id, (userId) => {
 }, { immediate: true })
 
 loadHoleData()
+
+watch([holeNumber, () => route.query.course, roundStore.selectedCourse], () => {
+  loadHoleData()
+})
+
+function selectHole(nextHole: number) {
+  router.replace({ query: { ...route.query, hole: String(nextHole) } })
+}
 
 function selectBagClub(club: { name: string; carry: number }) {
   bagMessage.value = `${club.name} selected for comparison.`

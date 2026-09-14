@@ -6,7 +6,7 @@
       <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p class="text-[10px] uppercase tracking-[0.24em] text-[#8ca49a]">Scorecard</p>
-          <h1 class="mt-2 text-3xl font-black text-white">Pebble Beach</h1>
+          <h1 class="mt-2 text-3xl font-black text-white">Stonehedge Golf Course</h1>
         </div>
         <div class="text-sm text-[#dfeee6]">
           <span class="text-[#8ca49a]">Player:</span> Jordan Palmer
@@ -39,7 +39,7 @@
 import AppHeader from '../components/AppHeader.vue'
 import ScorecardTable from '../components/ScorecardTable.vue'
 
-const courseName = 'Pebble Beach'
+const courseName = 'Stonehedge Golf Course'
 
 const holes = [
   { hole: 1, par: 4, score: 4 },

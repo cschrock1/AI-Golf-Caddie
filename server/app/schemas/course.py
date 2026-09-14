@@ -53,12 +53,6 @@ class CourseImportResponse(BaseModel):
     imported_holes: int
 
 
-class ProviderCourseImport(BaseModel):
-    name: str = Field(..., min_length=1)
-    city: str | None = None
-    state: str | None = None
-
-
 class HoleResponse(BaseModel):
     id: int
     course_id: int

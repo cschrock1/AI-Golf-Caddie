@@ -1,8 +1,8 @@
 <template>
-  <section class="relative overflow-hidden rounded-[30px] border border-[#214335] bg-[#d9e1d8] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]">
-    <div ref="mapElement" class="h-[620px] w-full" role="img" aria-label="Interactive Mapbox GPS map showing the current golf hole"></div>
+  <section class="relative overflow-hidden border border-[#214335] bg-[#d9e1d8] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]" :class="fullScreen ? 'rounded-none border-x-0 border-t-0' : 'rounded-[30px]'">
+    <div ref="mapElement" class="h-[620px] w-full" :class="fullScreen ? 'h-[clamp(320px,calc(100svh-155px),720px)]' : ''" role="img" aria-label="Interactive Mapbox GPS map showing the current golf hole"></div>
 
-    <div class="absolute right-3 top-3 z-10 flex gap-2">
+    <div class="absolute right-3 z-10 flex gap-2" :class="fullScreen ? 'top-16' : 'top-3'">
       <button
         type="button"
         class="rounded-full border border-white/40 bg-black/25 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-white backdrop-blur-sm transition hover:bg-black/35"
@@ -13,7 +13,7 @@
       </button>
     </div>
 
-    <div v-if="playerDistance !== null" class="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full border border-white/30 bg-black/55 px-4 py-2 text-white shadow-lg backdrop-blur-sm">
+    <div v-if="playerDistance !== null" class="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full border border-white/30 bg-black/55 px-4 py-2 text-white shadow-lg backdrop-blur-sm" :class="fullScreen ? 'bottom-24' : ''">
       <span class="text-[10px] uppercase tracking-[0.18em] text-white/75">You to pin</span>
       <div class="mt-1 text-center text-xl font-black text-[#c8ff00]">{{ playerDistance }} <span class="text-[10px] tracking-[0.14em] text-white/75">YDS</span></div>
     </div>
@@ -28,9 +28,9 @@ import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import mapboxgl, { type Map, type Marker } from 'mapbox-gl'
 import { Geolocation } from '@capacitor/geolocation'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import type { GeoJsonMultiPolygon, GeoJsonPoint, GeoJsonPolygon, Hole } from '../types'
+import type { Course, GeoJsonMultiPolygon, GeoJsonPoint, GeoJsonPolygon, Hole } from '../types'
 
-const props = defineProps<{ hole: Hole | null }>()
+const props = withDefaults(defineProps<{ hole: Hole | null; course?: Course | null; fullScreen?: boolean }>(), { course: null, fullScreen: false })
 const mapElement = ref<HTMLElement | null>(null)
 const isLocating = ref(false)
 const locationError = ref('')
@@ -42,6 +42,7 @@ let teeMarker: Marker | null = null
 let pinMarker: Marker | null = null
 let playerMarker: Marker | null = null
 let locationWatchId: string | null = null
+let geocodedCourse = ''
 
 function pointCoordinates(point: GeoJsonPoint | null | undefined): [number, number] | null {
   return point ? point.coordinates : null
@@ -71,7 +72,47 @@ function holeFeatureCollection() {
   }
 }
 
-function updateMarkers() {
+async function centerOnCourse() {
+  if (!map || !props.course) return
+  if (props.course.map_center) {
+    map.flyTo({ center: props.course.map_center, zoom: 15 })
+    return
+  }
+  const courseQuery = [props.course.name, props.course.city, props.course.state].filter(Boolean).join(', ')
+  if (!courseQuery || geocodedCourse === courseQuery) return
+
+  try {
+    const courseName = props.course.name
+    const searchQueries = [
+      courseQuery,
+      `${courseName.replace(/hedge/gi, 'henge')}, ${props.course.state || ''}`,
+      `${courseName.replace(/golf course/gi, 'golf club')}, ${props.course.state || ''}`,
+      `${courseName}, ${props.course.state || ''}`
+    ].map((query) => query.replace(/,\s*,/g, ',').trim())
+    let fallbackFeature: { center?: [number, number]; place_type?: string[] } | undefined
+
+    for (const query of searchQueries) {
+      const response = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapToken}&limit=5`)
+      const data = await response.json() as { features?: Array<{ center?: [number, number]; place_type?: string[] }> }
+      fallbackFeature ||= data.features?.find((feature) => feature.center)
+      const courseFeature = data.features?.find((feature) => feature.center && feature.place_type?.includes('poi'))
+      if (courseFeature?.center) {
+        map.flyTo({ center: courseFeature.center, zoom: 15 })
+        geocodedCourse = courseQuery
+        return
+      }
+    }
+
+    if (fallbackFeature?.center) {
+      map.flyTo({ center: fallbackFeature.center, zoom: 12 })
+      geocodedCourse = courseQuery
+    }
+  } catch {
+    geocodedCourse = ''
+  }
+}
+
+async function updateMarkers() {
   if (!map || !props.hole) return
   teeMarker?.remove()
   pinMarker?.remove()
@@ -86,6 +127,8 @@ function updateMarkers() {
     map.fitBounds(bounds, { padding: 44, maxZoom: 17 })
   } else if (points.length === 1) {
     map.setCenter(points[0])
+  } else {
+    await centerOnCourse()
   }
 }
 
@@ -175,8 +218,8 @@ onMounted(async () => {
   map = new mapboxgl.Map({
     container: mapElement.value,
     style: 'mapbox://styles/mapbox/satellite-streets-v12',
-    center: [-85.856, 41.574],
-    zoom: 16,
+    center: [-98.5795, 39.8283],
+    zoom: 3,
     attributionControl: true
   })
   map.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'bottom-right')
@@ -193,7 +236,7 @@ onMounted(async () => {
   map.on('error', () => { mapError.value = 'Mapbox could not load the map. Check the token and network connection.' })
 })
 
-watch(() => props.hole, updateCourseLayers)
+watch(() => [props.hole, props.course], updateCourseLayers, { deep: true })
 
 onBeforeUnmount(() => {
   teeMarker?.remove()

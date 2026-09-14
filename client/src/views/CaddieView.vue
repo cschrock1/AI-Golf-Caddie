@@ -72,7 +72,7 @@ import AppHeader from '../components/AppHeader.vue'
 import ChatMessage from '../components/ChatMessage.vue'
 import { roundStore } from '../stores/round'
 
-const courseName = 'Pebble Beach'
+const courseName = 'Stonehedge Golf Course'
 const holeNumber = 7
 const dist = 114
 const currentTime = '10:42 AM'
