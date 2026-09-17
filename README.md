@@ -72,14 +72,14 @@ The project will be developed in phases, with the goal of completing a functiona
 
 ### Phase 3: User Accounts & Golfer Profiles
 
-- [ ] Create registration
-- [ ] Create login
-- [ ] Implement authentication
+- [x] Create registration
+- [x] Create login
+- [x] Implement authentication
 - [ ] Create user profile
 - [ ] Add handicap
 - [ ] Add preferred tees
-- [ ] Add golf clubs
-- [ ] Add club distances
+- [x] Add golf clubs
+- [x] Add club distances
 - [ ] Allow users to edit club information
 - [ ] Display golfer information
 
