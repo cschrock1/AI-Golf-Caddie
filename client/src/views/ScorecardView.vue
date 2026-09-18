@@ -30,7 +30,7 @@
     </section>
 
     <div class="mt-6">
-      <ScorecardTable :holes="holes" />
+      <ScorecardTable :holes="holes" :roundId="roundId" :userId="userId" />
     </div>
   </div>
 </template>
@@ -38,6 +38,7 @@
 <script setup lang="ts">
 import AppHeader from '../components/AppHeader.vue'
 import ScorecardTable from '../components/ScorecardTable.vue'
+import { authStore } from '../stores/auth'
 
 const courseName = 'Stonehedge Golf Course'
 
@@ -61,4 +62,6 @@ const holes = [
   { hole: 17, par: 3, score: 3 },
   { hole: 18, par: 4, score: 5 }
 ]
+const userId = authStore.user?.value?.id ?? null
+const roundId = 1
 </script>
