@@ -70,6 +70,11 @@
 import { reactive, ref, watch, onMounted, computed } from 'vue'
 import { getRoundScores, saveRoundScores } from '../services/api'
 
+const emit = defineEmits<{
+  scoresSaved: []
+  totalUpdated: [total: number | null]
+}>()
+
 const props = withDefaults(
   defineProps<{
     courseName?: string
@@ -147,6 +152,13 @@ function mergeScores(scores: Array<any>) {
   }
 }
 
+function currentTotal() {
+  const total = holesLocal.reduce((sum, hole) => {
+    return sum + (typeof hole.strokes === 'number' ? hole.strokes : 0)
+  }, 0)
+  return total > 0 ? total : null
+}
+
 async function loadScores() {
   if (!props.roundId) {
     restoreDraft()
@@ -160,6 +172,7 @@ async function loadScores() {
     // ignore; leave UI with provided data
   }
   restoreDraft()
+  emit('totalUpdated', currentTotal())
 }
 
 onMounted(loadScores)
@@ -287,6 +300,8 @@ async function saveChanges() {
     message.value = 'Scorecard saved locally.'
     messageClass.value = 'text-[#8ca49a]'
     editing.value = false
+    emit('scoresSaved')
+    emit('totalUpdated', currentTotal())
     return
   }
 
@@ -306,6 +321,8 @@ async function saveChanges() {
     messageClass.value = 'text-[#8ca49a]'
     editing.value = false
     clearDraft()
+    emit('scoresSaved')
+    emit('totalUpdated', currentTotal())
   } catch (err: any) {
     if (err?.response) {
       message.value = `${err.response.status} ${err.response.data?.detail || err.response.statusText}`

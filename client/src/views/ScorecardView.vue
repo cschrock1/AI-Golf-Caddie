@@ -20,7 +20,7 @@
         </div>
         <div class="rounded-2xl border border-[#214335] bg-[#10271f] p-3">
           <p class="text-[10px] uppercase tracking-[0.16em] text-[#8ca49a]">Total</p>
-          <p class="mt-2 text-base font-bold text-white">74</p>
+          <p class="mt-2 text-base font-bold text-white">{{ liveTotal ?? '--' }}</p>
         </div>
         <div class="rounded-2xl border border-[#214335] bg-[#10271f] p-3">
           <p class="text-[10px] uppercase tracking-[0.16em] text-[#8ca49a]">Par</p>
@@ -30,7 +30,13 @@
     </section>
 
     <div class="mt-6">
-      <ScorecardTable :course-name="courseName" :holes="holes" :round-id="roundId" :user-id="userId" />
+      <ScorecardTable
+        :course-name="courseName"
+        :holes="holes"
+        :round-id="roundId"
+        :user-id="userId"
+        @total-updated="updateLiveTotal"
+      />
     </div>
   </div>
 </template>
@@ -68,6 +74,11 @@ const holes = [
 ]
 const userId = computed(() => authStore.user.value?.id ?? null)
 const roundId = ref<number | null>(null)
+const liveTotal = ref<number | null>(null)
+
+function updateLiveTotal(total: number | null) {
+  liveTotal.value = total
+}
 
 onMounted(async () => {
   if (!userId.value) return
