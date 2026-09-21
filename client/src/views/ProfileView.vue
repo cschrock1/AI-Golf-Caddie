@@ -105,6 +105,10 @@ function resetClubForm() {
   editingId.value = null
 }
 
+function sortClubs() {
+  clubs.value.sort((a, b) => (b.total_distance ?? 0) - (a.total_distance ?? 0))
+}
+
 async function loadProfile() {
   const currentUser = user.value
   if (!currentUser) return
@@ -126,7 +130,8 @@ async function loadProfile() {
     }
     const clubsResponse = await getClubs(currentUser.id)
     clubs.value = clubsResponse.data
-    form.value = { full_name: currentUser.full_name || '', handicap: profile.value.handicap ?? null, preferred_tee: profile.value.preferred_tee || '' }
+    sortClubs()
+    form.value = { full_name: currentUser.full_name || '', handicap: profile.value?.handicap ?? null, preferred_tee: profile.value?.preferred_tee || '' }
   } catch {
     error.value = 'Unable to load your profile. Try again.'
   } finally {
@@ -193,9 +198,11 @@ async function submitClub() {
       const response = await updateClub(editingId.value, currentUser.id, payload)
       const index = clubs.value.findIndex((club) => club.id === editingId.value)
       if (index >= 0) clubs.value[index] = response.data
+      sortClubs()
     } else {
       const response = await createClub(currentUser.id, payload)
-      clubs.value.unshift(response.data)
+      clubs.value.push(response.data)
+      sortClubs()
     }
     closeForm()
   } catch { error.value = 'Unable to save this club right now.' }
