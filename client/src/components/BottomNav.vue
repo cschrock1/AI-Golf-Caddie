@@ -27,7 +27,7 @@ const navItems = [
   { label: 'GPS', to: '/hole', icon: '◎' },
   { label: 'Caddie', to: '/caddie', icon: '✦' },
   { label: 'Score', to: '/scorecard', icon: '▣' },
-  { label: 'Bag', to: '/bag', icon: '◉' }
+  { label: 'Profile', to: '/profile', icon: '●' }
 ]
 
 const isActive = (path: string) => route.path.startsWith(path)
