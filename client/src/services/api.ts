@@ -38,5 +38,5 @@ export const getShots = async (roundId: number) => api.get('/shots/', { params: 
 export const createShot = async (payload: Record<string, unknown>) => api.post('/shots/', payload)
 export const getRecommendation = async () => Promise.resolve({ data: null })
 export const getRoundScores = async (roundId: number) => api.get('/round_scores/', { params: { round_id: roundId } })
-export const saveRoundScores = async (userId: number, roundId: number, scores: Array<{ hole_id: number; strokes: number }>) =>
+export const saveRoundScores = async (userId: number, roundId: number, scores: Array<{ hole_id?: number; hole_number?: number; strokes: number }>) =>
   api.post('/round_scores/batch', scores, { params: { user_id: userId, round_id: roundId } })
