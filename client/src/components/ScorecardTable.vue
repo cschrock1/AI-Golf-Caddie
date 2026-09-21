@@ -6,10 +6,10 @@
         <p class="mt-1 text-lg font-black text-white">{{ courseName }}</p>
       </div>
       <div class="flex items-center gap-2">
-        <button v-if="!editing" @click="startEditing" class="rounded-full border border-[#274536] bg-[#0d2119] px-3 py-1 text-[12px] font-black uppercase tracking-[0.12em] text-[#c8ff00]">Edit Scores</button>
+        <button v-if="!editing" type="button" @click="startEditing" class="rounded-full border border-[#274536] bg-[#0d2119] px-3 py-1 text-[12px] font-black uppercase tracking-[0.12em] text-[#c8ff00]">Edit Scores</button>
         <div v-else class="flex gap-2">
-          <button @click="saveChanges" :disabled="saving" class="rounded-full border border-[#274536] bg-[#0d2119] px-3 py-1 text-[12px] font-black uppercase tracking-[0.12em] text-[#c8ff00]">Save Changes</button>
-          <button @click="cancelEditing" :disabled="saving" class="rounded-full border border-[#274536] bg-transparent px-3 py-1 text-[12px] font-black uppercase tracking-[0.12em] text-[#c8ff00]">Cancel</button>
+          <button type="button" @click="saveChanges" :disabled="saving" class="rounded-full border border-[#274536] bg-[#0d2119] px-3 py-1 text-[12px] font-black uppercase tracking-[0.12em] text-[#c8ff00]">Save Changes</button>
+          <button type="button" @click="cancelEditing" :disabled="saving" class="rounded-full border border-[#274536] bg-transparent px-3 py-1 text-[12px] font-black uppercase tracking-[0.12em] text-[#c8ff00]">Cancel</button>
         </div>
       </div>
     </div>
@@ -104,7 +104,7 @@ function draftKey() {
 function saveDraft() {
   try {
     const data = JSON.stringify(holesLocal.map(h => ({ hole: h.hole ?? h.hole_number ?? null, par: h.par ?? null, strokesInput: h.strokesInput ?? '' })))
-    sessionStorage.setItem(draftKey(), data)
+    localStorage.setItem(draftKey(), data)
   } catch {
     // ignore
   }
@@ -112,7 +112,7 @@ function saveDraft() {
 
 function loadDraft() {
   try {
-    const raw = sessionStorage.getItem(draftKey())
+    const raw = localStorage.getItem(draftKey())
     if (!raw) return null
     return JSON.parse(raw)
   } catch {
@@ -121,12 +121,22 @@ function loadDraft() {
 }
 
 function clearDraft() {
-  try { sessionStorage.removeItem(draftKey()) } catch {}
+  try { localStorage.removeItem(draftKey()) } catch {}
+}
+
+function restoreDraft() {
+  const draft = loadDraft()
+  if (!draft) return
+
+  draft.forEach((d: any) => {
+    const match = holesLocal.find(h => (h.hole && h.hole === d.hole) || h.hole_id === d.hole)
+    if (match) match.strokesInput = d.strokesInput
+  })
 }
 
 function mergeScores(scores: Array<any>) {
   for (const s of scores) {
-    const match = holesLocal.find(h => (h.hole && h.hole === (s.hole_number ?? s.hole_id)) || h.hole_id === s.hole_id)
+    const match = holesLocal.find(h => h.hole === s.hole_number || h.hole_id === s.hole_id)
     if (match) {
       match.strokesInput = String(s.strokes)
       match.strokes = s.strokes
@@ -138,33 +148,23 @@ function mergeScores(scores: Array<any>) {
 }
 
 async function loadScores() {
-  if (!props.roundId) return
+  if (!props.roundId) {
+    restoreDraft()
+    return
+  }
+
   try {
     const resp = await getRoundScores(props.roundId)
     mergeScores(resp.data)
-    // after loading saved scores, if a draft exists and we're not editing, merge draft so user doesn't lose in-progress edits
-    const draft = loadDraft()
-    if (draft && !editing.value) {
-      draft.forEach((d: any) => {
-        const match = holesLocal.find(h => (h.hole && h.hole === d.hole) || h.hole_id === d.hole)
-        if (match) match.strokesInput = d.strokesInput
-      })
-    }
   } catch (err) {
     // ignore; leave UI with provided data
   }
+  restoreDraft()
 }
 
-onMounted(() => {
-  loadScores()
-  const draft = loadDraft()
-  if (draft) {
-    draft.forEach((d: any) => {
-      const match = holesLocal.find(h => (h.hole && h.hole === d.hole) || h.hole_id === d.hole)
-      if (match) match.strokesInput = d.strokesInput
-    })
-  }
-})
+onMounted(loadScores)
+
+watch(() => [props.roundId, props.userId], loadScores)
 
 watch(() => props.holes, (next) => {
   // reset local copy if holes prop changes, but do not overwrite while editing
@@ -210,7 +210,7 @@ function focusNext(idx: number) {
 }
 
 function displayScore(h: any) {
-  return h.strokes ?? h.score ?? h.strokesInput ?? '-' 
+  return (h.strokes ?? h.score ?? h.strokesInput) || '--'
 }
 
 function scoreClass(h: any) {
@@ -262,11 +262,13 @@ const relativeToPar = computed(() => {
 })
 
 async function saveChanges() {
-  // validate
   const payload: Array<{ hole_id?: number; hole_number?: number; strokes: number }> = []
   for (const h of holesLocal) {
-    const v = Number(h.strokesInput)
-    if (!Number.isFinite(v) || v <= 0) {
+    const input = String(h.strokesInput ?? '').trim()
+    if (!input) continue
+
+    const v = Number(input)
+    if (!Number.isInteger(v) || v <= 0) {
       message.value = 'Please enter valid whole-number scores greater than 0.'
       messageClass.value = 'text-[#f19b66]'
       return
@@ -275,10 +277,12 @@ async function saveChanges() {
   }
 
   if (!props.roundId || !props.userId) {
-    // operate locally only
-    payload.forEach((p, idx) => {
-      holesLocal[idx].strokes = p.strokes
-      holesLocal[idx].strokesInput = String(p.strokes)
+    payload.forEach((p) => {
+      const hole = holesLocal.find(h => (h.hole ?? h.hole_number) === p.hole_number)
+      if (hole) {
+        hole.strokes = p.strokes
+        hole.strokesInput = String(p.strokes)
+      }
     })
     message.value = 'Scorecard saved locally.'
     messageClass.value = 'text-[#8ca49a]'
@@ -291,9 +295,12 @@ async function saveChanges() {
   try {
     await saveRoundScores(props.userId, props.roundId, payload)
     // apply saved values
-    payload.forEach((p, idx) => {
-      holesLocal[idx].strokes = p.strokes
-      holesLocal[idx].strokesInput = String(p.strokes)
+    payload.forEach((p) => {
+      const hole = holesLocal.find(h => (h.hole ?? h.hole_number) === p.hole_number)
+      if (hole) {
+        hole.strokes = p.strokes
+        hole.strokesInput = String(p.strokes)
+      }
     })
     message.value = 'Scorecard saved.'
     messageClass.value = 'text-[#8ca49a]'
