@@ -93,6 +93,35 @@ const messageClass = ref('text-[#8ca49a] bg-transparent')
 // local copy with strokesInput for editing
 const holesLocal = reactive((props.holes || []).map(h => ({ ...h, strokesInput: h.strokes ?? h.score ?? '' })))
 
+function draftKey() {
+  const rid = props.roundId ?? 'no-round'
+  const uid = props.userId ?? 'no-user'
+  return `scorecard_draft_${rid}_${uid}`
+}
+
+function saveDraft() {
+  try {
+    const data = JSON.stringify(holesLocal.map(h => ({ hole: h.hole ?? h.hole_number ?? null, par: h.par ?? null, strokesInput: h.strokesInput ?? '' })))
+    sessionStorage.setItem(draftKey(), data)
+  } catch {
+    // ignore
+  }
+}
+
+function loadDraft() {
+  try {
+    const raw = sessionStorage.getItem(draftKey())
+    if (!raw) return null
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
+
+function clearDraft() {
+  try { sessionStorage.removeItem(draftKey()) } catch {}
+}
+
 function mergeScores(scores: Array<any>) {
   for (const s of scores) {
     const match = holesLocal.find(h => (h.hole && h.hole === (s.hole_number ?? s.hole_id)) || h.hole_id === s.hole_id)
@@ -111,6 +140,14 @@ async function loadScores() {
   try {
     const resp = await getRoundScores(props.roundId)
     mergeScores(resp.data)
+    // after loading saved scores, if a draft exists and we're not editing, merge draft so user doesn't lose in-progress edits
+    const draft = loadDraft()
+    if (draft && !editing.value) {
+      draft.forEach((d: any) => {
+        const match = holesLocal.find(h => (h.hole && h.hole === d.hole) || h.hole_id === d.hole)
+        if (match) match.strokesInput = d.strokesInput
+      })
+    }
   } catch (err) {
     // ignore; leave UI with provided data
   }
@@ -118,12 +155,25 @@ async function loadScores() {
 
 onMounted(() => {
   loadScores()
+  const draft = loadDraft()
+  if (draft) {
+    draft.forEach((d: any) => {
+      const match = holesLocal.find(h => (h.hole && h.hole === d.hole) || h.hole_id === d.hole)
+      if (match) match.strokesInput = d.strokesInput
+    })
+  }
 })
 
 watch(() => props.holes, (next) => {
-  // reset local copy if holes prop changes
+  // reset local copy if holes prop changes, but do not overwrite while editing
+  if (editing.value) return
   holesLocal.splice(0, holesLocal.length, ...(next || []).map(h => ({ ...h, strokesInput: h.strokes ?? h.score ?? '' })))
 })
+
+// persist draft while editing so switching tabs doesn't lose inputs
+watch(holesLocal, () => {
+  if (editing.value) saveDraft()
+}, { deep: true })
 
 function startEditing() {
   message.value = ''
@@ -137,6 +187,7 @@ function cancelEditing() {
     h.strokesInput = original ? (original.strokes ?? original.score ?? '') : ''
   })
   editing.value = false
+  clearDraft()
 }
 
 function normalizeInput(h: any) {
@@ -236,7 +287,7 @@ async function saveChanges() {
   saving.value = true
   message.value = ''
   try {
-    await saveRoundScores(props.userId, props.roundId, payload.map(p => ({ hole_id: p.hole_id ?? p.hole_number, strokes: p.strokes })))
+    await saveRoundScores(props.userId, props.roundId, payload)
     // apply saved values
     payload.forEach((p, idx) => {
       holesLocal[idx].strokes = p.strokes
@@ -245,8 +296,13 @@ async function saveChanges() {
     message.value = 'Scorecard saved.'
     messageClass.value = 'text-[#8ca49a]'
     editing.value = false
+    clearDraft()
   } catch (err: any) {
-    message.value = err?.response?.data?.detail || 'Failed to save scores.'
+    if (err?.response) {
+      message.value = `${err.response.status} ${err.response.data?.detail || err.response.statusText}`
+    } else {
+      message.value = err?.message || 'Failed to save scores.'
+    }
     messageClass.value = 'text-[#f19b66]'
   } finally {
     saving.value = false

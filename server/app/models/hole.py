@@ -64,3 +64,8 @@ class Hole(Base):
     shots: Mapped[list["Shot"]] = relationship(
         back_populates="hole"
     )
+
+    scores: Mapped[list["RoundScore"]] = relationship(
+        back_populates="hole",
+        cascade="all, delete-orphan"
+    )

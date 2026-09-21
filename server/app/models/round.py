@@ -42,3 +42,9 @@ class Round(Base):
         back_populates="round",
         cascade="all, delete-orphan"
     )
+
+    # per-hole scores for this round
+    scores: Mapped[list["RoundScore"]] = relationship(
+        back_populates="round",
+        cascade="all, delete-orphan"
+    )
