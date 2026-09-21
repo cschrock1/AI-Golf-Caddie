@@ -111,8 +111,20 @@ async function loadProfile() {
   loading.value = true
   error.value = ''
   try {
-    const [profileResponse, clubsResponse] = await Promise.all([getGolferProfile(currentUser.id), getClubs(currentUser.id)])
-    profile.value = profileResponse.data
+    // load profile separately so a missing profile (404) doesn't fail the whole load
+    let profileResponse = null
+    try {
+      profileResponse = await getGolferProfile(currentUser.id)
+      profile.value = profileResponse.data
+    } catch (err: any) {
+      // if profile not found, treat as empty and allow user to create one
+      if (err?.response?.status === 404) {
+        profile.value = null
+      } else {
+        throw err
+      }
+    }
+    const clubsResponse = await getClubs(currentUser.id)
     clubs.value = clubsResponse.data
     form.value = { full_name: currentUser.full_name || '', handicap: profile.value.handicap ?? null, preferred_tee: profile.value.preferred_tee || '' }
   } catch {
@@ -133,8 +145,31 @@ function cancelEdit() {
 async function saveProfile() {
   const currentUser = user.value
   if (!currentUser) return
-  await api.put('/auth/me', { full_name: form.value.full_name.trim() })
-  await api.put(`/golfer/${currentUser.id}`, { user_id: currentUser.id, handicap: form.value.handicap, preferred_tee: form.value.preferred_tee })
+  try {
+    await api.put('/auth/me', { full_name: form.value.full_name.trim() })
+  } catch (err: any) {
+    error.value = 'Unable to update account name.'
+    return
+  }
+
+  // update or create golfer profile
+  try {
+    // try update first
+    await api.put(`/golfer/${currentUser.id}`, { user_id: currentUser.id, handicap: form.value.handicap, preferred_tee: form.value.preferred_tee })
+  } catch (err: any) {
+    if (err?.response?.status === 404) {
+      // create profile instead
+      try {
+        await api.post('/golfer/', { user_id: currentUser.id, handicap: form.value.handicap, preferred_tee: form.value.preferred_tee })
+      } catch (err2: any) {
+        error.value = 'Unable to save profile.'
+        return
+      }
+    } else {
+      error.value = 'Unable to save profile.'
+      return
+    }
+  }
   await authStore.loadUser()
   await loadProfile()
   editing.value = false
