@@ -10,12 +10,23 @@ from app.schemas.round_score import RoundScoreCreate, RoundScoreResponse
 router = APIRouter(prefix="/round_scores", tags=["RoundScores"])
 
 
+def serialize_score(score: RoundScore) -> dict:
+    return {
+        "id": score.id,
+        "round_id": score.round_id,
+        "hole_id": score.hole_id,
+        "hole_number": score.hole.hole_number,
+        "strokes": score.strokes,
+    }
+
+
 @router.get("/", response_model=list[RoundScoreResponse])
 def get_round_scores(
     round_id: int,
     db: Session = Depends(get_db)
 ):
-    return db.query(RoundScore).filter(RoundScore.round_id == round_id).all()
+    scores = db.query(RoundScore).filter(RoundScore.round_id == round_id).all()
+    return [serialize_score(score) for score in scores]
 
 
 @router.post("/batch", response_model=list[RoundScoreResponse], status_code=status.HTTP_200_OK)
@@ -65,4 +76,4 @@ def upsert_round_scores(
     for r in results:
         db.refresh(r)
 
-    return results
+    return [serialize_score(score) for score in results]

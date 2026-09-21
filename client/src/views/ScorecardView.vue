@@ -30,15 +30,16 @@
     </section>
 
     <div class="mt-6">
-      <ScorecardTable :course-name="courseName" :holes="holes" :roundId="roundId" :userId="userId" />
+      <ScorecardTable :course-name="courseName" :holes="holes" :round-id="roundId" :user-id="userId" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import AppHeader from '../components/AppHeader.vue'
 import ScorecardTable from '../components/ScorecardTable.vue'
+import { createRound, getCourses, getRounds } from '../services/api'
 import { authStore } from '../stores/auth'
 
 const playerName = computed(() => authStore.user.value?.full_name || 'Golfer')
@@ -46,25 +47,54 @@ const playerName = computed(() => authStore.user.value?.full_name || 'Golfer')
 const courseName = 'Stonehedge Golf Course'
 
 const holes = [
-  { hole: 1, par: 4, score: 4 },
-  { hole: 2, par: 5, score: 5 },
-  { hole: 3, par: 3, score: 4 },
-  { hole: 4, par: 4, score: 4 },
-  { hole: 5, par: 4, score: 5 },
-  { hole: 6, par: 3, score: 3 },
-  { hole: 7, par: 3, score: 4 },
-  { hole: 8, par: 5, score: 5 },
-  { hole: 9, par: 4, score: 4 },
-  { hole: 10, par: 4, score: 4 },
-  { hole: 11, par: 5, score: 6 },
-  { hole: 12, par: 4, score: 3 },
-  { hole: 13, par: 3, score: 3 },
-  { hole: 14, par: 4, score: 4 },
-  { hole: 15, par: 5, score: 5 },
-  { hole: 16, par: 4, score: 4 },
-  { hole: 17, par: 3, score: 3 },
-  { hole: 18, par: 4, score: 5 }
+  { hole: 1, par: 4, score: null },
+  { hole: 2, par: 5, score: null },
+  { hole: 3, par: 3, score: null },
+  { hole: 4, par: 4, score: null },
+  { hole: 5, par: 4, score: null },
+  { hole: 6, par: 3, score: null },
+  { hole: 7, par: 3, score: null },
+  { hole: 8, par: 5, score: null },
+  { hole: 9, par: 4, score: null },
+  { hole: 10, par: 4, score: null },
+  { hole: 11, par: 5, score: null },
+  { hole: 12, par: 4, score: null },
+  { hole: 13, par: 3, score: null },
+  { hole: 14, par: 4, score: null },
+  { hole: 15, par: 5, score: null },
+  { hole: 16, par: 4, score: null },
+  { hole: 17, par: 3, score: null },
+  { hole: 18, par: 4, score: null }
 ]
-const userId = authStore.user?.value?.id ?? null
-const roundId = 1
+const userId = computed(() => authStore.user.value?.id ?? null)
+const roundId = ref<number | null>(null)
+
+onMounted(async () => {
+  if (!userId.value) return
+
+  try {
+    const response = await getRounds(userId.value)
+    const existingRound = response.data.reduce((latest, candidate) => (
+      candidate.id > latest.id ? candidate : latest
+    ), response.data[0])
+    if (existingRound) {
+      roundId.value = existingRound.id
+      return
+    }
+
+    const coursesResponse = await getCourses()
+    const course = coursesResponse.data.find(item => item.name === courseName) ?? coursesResponse.data[0]
+    if (!course) return
+
+    const newRound = await createRound({
+      user_id: userId.value,
+      course_id: course.id,
+      date: new Date().toISOString().slice(0, 10),
+      score: null
+    })
+    roundId.value = newRound.data.id
+  } catch {
+    roundId.value = null
+  }
+})
 </script>
