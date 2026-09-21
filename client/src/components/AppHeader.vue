@@ -22,7 +22,7 @@
           class="flex items-center gap-2 rounded-full border border-[#2a4b3f] bg-[#113027] px-3 py-2 text-sm text-[#dfeee6] transition hover:border-[#5c7f73] hover:text-white"
           aria-label="Open profile"
         >
-          <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#c8ff00] text-xs font-bold text-[#07140f]">JP</span>
+          <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#c8ff00] text-xs font-bold text-[#07140f]">{{ profileInitials }}</span>
           <span class="hidden sm:inline">Profile</span>
         </button>
       </div>
@@ -40,6 +40,21 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { authStore } from '../stores/auth'
+
+const profileInitials = computed(() => {
+  const name = authStore.user.value?.full_name?.trim()
+  if (!name) return 'G'
+
+  return name
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+})
+
 withDefaults(
   defineProps<{
     courseName?: string

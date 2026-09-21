@@ -9,7 +9,7 @@
           <h1 class="mt-2 text-3xl font-black text-white">Stonehedge Golf Course</h1>
         </div>
         <div class="text-sm text-[#dfeee6]">
-          <span class="text-[#8ca49a]">Player:</span> Jordan Palmer
+          <span class="text-[#8ca49a]">Player:</span> {{ playerName }}
         </div>
       </div>
 
@@ -30,15 +30,18 @@
     </section>
 
     <div class="mt-6">
-      <ScorecardTable :holes="holes" :roundId="roundId" :userId="userId" />
+      <ScorecardTable :course-name="courseName" :holes="holes" :roundId="roundId" :userId="userId" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import AppHeader from '../components/AppHeader.vue'
 import ScorecardTable from '../components/ScorecardTable.vue'
 import { authStore } from '../stores/auth'
+
+const playerName = computed(() => authStore.user.value?.full_name || 'Golfer')
 
 const courseName = 'Stonehedge Golf Course'
 

@@ -3,7 +3,7 @@
     <div class="mb-3 flex items-center justify-between">
       <div>
         <p class="text-[10px] uppercase tracking-[0.24em] text-[#8ca49a]">Round</p>
-        <p class="mt-1 text-lg font-black text-white">Pebble Beach</p>
+        <p class="mt-1 text-lg font-black text-white">{{ courseName }}</p>
       </div>
       <div class="flex items-center gap-2">
         <button v-if="!editing" @click="startEditing" class="rounded-full border border-[#274536] bg-[#0d2119] px-3 py-1 text-[12px] font-black uppercase tracking-[0.12em] text-[#c8ff00]">Edit Scores</button>
@@ -72,11 +72,13 @@ import { getRoundScores, saveRoundScores } from '../services/api'
 
 const props = withDefaults(
   defineProps<{
+    courseName?: string
     holes?: Array<any>
     roundId?: number | null
     userId?: number | null
   }>(),
   {
+    courseName: 'Stonehedge Golf Course',
     holes: () => [
       { hole: 1, par: 4, strokes: null }
     ],

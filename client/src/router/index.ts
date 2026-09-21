@@ -5,7 +5,7 @@ import LoginView from '../views/LoginView.vue'
 import HoleView from '../views/HoleView.vue'
 import CaddieView from '../views/CaddieView.vue'
 import ScorecardView from '../views/ScorecardView.vue'
-import BagView from '../views/BagView.vue'
+import ProfileView from '../views/ProfileView.vue'
 import { authStore } from '../stores/auth'
 import { getToken } from '../services/auth'
 
@@ -17,7 +17,8 @@ const routes = [
   { path: '/hole', name: 'Hole', component: HoleView, meta: { requiresAuth: true } },
   { path: '/caddie', name: 'Caddie', component: CaddieView, meta: { requiresAuth: true } },
   { path: '/scorecard', name: 'Scorecard', component: ScorecardView, meta: { requiresAuth: true } },
-  { path: '/bag', name: 'Bag', component: BagView, meta: { requiresAuth: true } }
+  { path: '/profile', name: 'Profile', component: ProfileView, meta: { requiresAuth: true } },
+  { path: '/bag', redirect: '/profile' }
 ]
 
 const router = createRouter({
