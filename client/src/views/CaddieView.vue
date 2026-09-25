@@ -16,7 +16,7 @@
       <div class="mt-5 grid gap-3 sm:grid-cols-4">
         <div class="rounded-2xl border border-[#214335] bg-[#10271f] p-3">
           <p class="text-[10px] uppercase tracking-[0.16em] text-[#8ca49a]">Course</p>
-          <p class="mt-2 text-base font-bold text-white">{{ courseName }}</p>
+          <p class="mt-2 text-base font-bold text-white">{{ courseName ?? 'No active round' }}</p>
         </div>
         <div class="rounded-2xl border border-[#214335] bg-[#10271f] p-3">
           <p class="text-[10px] uppercase tracking-[0.16em] text-[#8ca49a]">Hole</p>
@@ -24,11 +24,11 @@
         </div>
         <div class="rounded-2xl border border-[#214335] bg-[#10271f] p-3">
           <p class="text-[10px] uppercase tracking-[0.16em] text-[#8ca49a]">Distance</p>
-          <p class="mt-2 text-base font-bold text-white">{{ dist }} YDS</p>
+          <p class="mt-2 text-base font-bold text-white">{{ dist != null ? dist + ' YDS' : 'Distance unavailable' }}</p>
         </div>
         <div class="rounded-2xl border border-[#214335] bg-[#10271f] p-3">
           <p class="text-[10px] uppercase tracking-[0.16em] text-[#8ca49a]">Wind</p>
-          <p class="mt-2 text-base font-bold text-white">{{ conditions.windSpeed }} MPH</p>
+          <p class="mt-2 text-base font-bold text-white">{{ conditions.windSpeed != null ? conditions.windSpeed + ' MPH' : 'Wind unavailable' }}</p>
         </div>
       </div>
     </section>
@@ -66,45 +66,99 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { demoMessages } from '../mock/recommendation'
+import { computed, ref, watch } from 'vue'
 import AppHeader from '../components/AppHeader.vue'
 import ChatMessage from '../components/ChatMessage.vue'
 import { roundStore } from '../stores/round'
 
-const courseName = 'Stonehedge Golf Course'
-const holeNumber = 7
-const dist = 114
-const currentTime = '10:42 AM'
+const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+
+const courseName = computed(() => roundStore.selectedCourse?.value?.name ?? null)
+const holeNumber = computed(() => roundStore.selectedHole.value ?? 1)
 const conditions = roundStore.conditions
 
-const chatMessages = ref(demoMessages)
+// debug: log active selection at component setup
+try {
+  console.log('CaddieView: startup selectedCourse', roundStore.selectedCourse?.value)
+  console.log('CaddieView: startup selectedHole', roundStore.selectedHole.value)
+  console.log('CaddieView: startup conditions', (roundStore.conditions as any).value)
+  console.log('CaddieView: startup selectedRoundId', (roundStore as any).selectedRoundId?.value)
+} catch {}
+
+// derive a best-effort distance: use recommendation or conditions or placeholder
+const dist = computed(() => {
+  const rec = roundStore.recommendation.value
+  if (rec && (rec as any).distance) return (rec as any).distance
+  if (conditions.value && (conditions.value.distance || (conditions.value as any).holeDistance)) return conditions.value.distance ?? (conditions.value as any).holeDistance
+  return null
+})
+
+function briefingText() {
+  const parts: string[] = []
+  if (courseName.value) parts.push(`Course: ${courseName.value}`)
+  else parts.push('No active round')
+  parts.push(`Hole: ${holeNumber.value}`)
+  if (dist.value != null) parts.push(`Distance: ${dist.value} YDS`)
+  if (conditions.value?.windSpeed != null) parts.push(`Wind: ${conditions.value.windSpeed} MPH`)
+  return parts.join(' · ')
+}
+
+// chatMessages starts with a Course Briefing assistant message based on active round
+const chatMessages = ref([
+  {
+    id: `system-${Date.now()}`,
+    role: 'assistant',
+    content: briefingText(),
+    timestamp: currentTime
+  }
+])
 const newMessage = ref('')
 const isLoading = ref(false)
 
 const canSend = computed(() => newMessage.value.trim().length > 0 && !isLoading.value)
 
+// keep briefing message in sync when round/hole changes
+watch([courseName, () => holeNumber.value, () => dist.value, () => conditions.value?.windSpeed], () => {
+  // debug: log briefing change
+  try { console.log('CaddieView: briefing change', { courseName: courseName.value, holeNumber: holeNumber.value, dist: dist.value, wind: conditions.value?.windSpeed }) } catch {}
+  // update first assistant message (system briefing)
+  if (chatMessages.value.length > 0 && chatMessages.value[0].role === 'assistant') {
+    chatMessages.value[0].content = briefingText()
+    chatMessages.value[0].timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  } else {
+    chatMessages.value.unshift({ id: `system-${Date.now()}`, role: 'assistant', content: briefingText(), timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) })
+  }
+})
+
 async function sendMessage() {
   if (!canSend.value) return
 
   const text = newMessage.value.trim()
-  chatMessages.value.push({
-    id: `user-${Date.now()}`,
-    role: 'user',
-    content: text,
-    timestamp: 'Now'
-  })
+  chatMessages.value.push({ id: `user-${Date.now()}`, role: 'user', content: text, timestamp: 'Now' })
   newMessage.value = ''
   isLoading.value = true
 
+  // build context payload from active round and golfer data
+  const context = {
+    courseName: courseName.value,
+    courseId: roundStore.selectedCourse?.value?.id ?? null,
+    holeNumber: holeNumber.value,
+    par: roundStore.selectedCourse?.value?.holes?.find?.((h: any) => h.hole_number === holeNumber.value)?.par ?? null,
+    distance: dist.value,
+    wind: conditions.value?.windSpeed ?? null,
+    golferProfile: null,
+    clubs: null
+  }
+
+  // Create a safe, context-aware assistant reply (no invented courses)
   setTimeout(() => {
-    chatMessages.value.push({
-      id: `assistant-${Date.now()}`,
-      role: 'assistant',
-      content:
-        'Play for the fat of the green, 12 feet left of the flag. The green slopes left-to-right toward the bunker, so the center gives you a safer miss while still leaving a good birdie opportunity.',
-      timestamp: 'Now'
-    })
+    let reply = ''
+    if (context.courseName) reply += `You're playing Hole ${context.holeNumber} at ${context.courseName}. `
+    if (context.distance != null) reply += `You have approximately ${context.distance} yards to the target. `
+    if (context.wind != null) reply += `Wind is ${context.wind} mph. `
+    reply += `Based on your question: "${text}", consider attacking the center of the green to reduce wind effects.`
+
+    chatMessages.value.push({ id: `assistant-${Date.now()}`, role: 'assistant', content: reply.trim(), timestamp: 'Now' })
     isLoading.value = false
   }, 700)
 }
