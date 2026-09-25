@@ -70,10 +70,13 @@ import { computed, ref, watch } from 'vue'
 import AppHeader from '../components/AppHeader.vue'
 import ChatMessage from '../components/ChatMessage.vue'
 import { roundStore } from '../stores/round'
+import { demoCourse, stonehedgeHoles } from '../mock/hole'
 
 const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
-const courseName = computed(() => roundStore.selectedCourse?.value?.name ?? null)
+// Force the AI Caddie to use Stonehedge mock course only
+const caddieCourse = ref({ ...demoCourse, holes: stonehedgeHoles })
+const courseName = computed(() => caddieCourse.value?.name ?? null)
 const holeNumber = computed(() => roundStore.selectedHole.value ?? 1)
 const conditions = roundStore.conditions
 
@@ -141,9 +144,9 @@ async function sendMessage() {
   // build context payload from active round and golfer data
   const context = {
     courseName: courseName.value,
-    courseId: roundStore.selectedCourse?.value?.id ?? null,
+    courseId: caddieCourse.value?.id ?? null,
     holeNumber: holeNumber.value,
-    par: roundStore.selectedCourse?.value?.holes?.find?.((h: any) => h.hole_number === holeNumber.value)?.par ?? null,
+    par: caddieCourse.value?.holes?.find?.((h: any) => h.hole_number === holeNumber.value)?.par ?? null,
     distance: dist.value,
     wind: conditions.value?.windSpeed ?? null,
     golferProfile: null,
