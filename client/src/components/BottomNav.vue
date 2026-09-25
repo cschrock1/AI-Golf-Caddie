@@ -1,6 +1,6 @@
 <template>
   <nav class="fixed inset-x-0 bottom-0 z-40 border-t border-[#bfd4b0] bg-[#f7faf4]/95 backdrop-blur-sm">
-    <div class="mx-auto grid max-w-4xl grid-cols-4 gap-1 px-2 py-2 sm:gap-2">
+    <div class="mx-auto grid max-w-4xl grid-cols-5 gap-1 px-2 py-2 sm:gap-2">
       <button
         v-for="item in navItems"
         :key="item.to"
@@ -24,6 +24,7 @@ const route = useRoute()
 const router = useRouter()
 
 const navItems = [
+  { label: 'Dashboard', to: '/dashboard', icon: '▣' },
   { label: 'GPS', to: '/hole', icon: '◎' },
   { label: 'Caddie', to: '/caddie', icon: '✦' },
   { label: 'Score', to: '/scorecard', icon: '▣' },
