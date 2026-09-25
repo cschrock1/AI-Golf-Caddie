@@ -45,7 +45,8 @@
 import { computed, onMounted, ref } from 'vue'
 import AppHeader from '../components/AppHeader.vue'
 import ScorecardTable from '../components/ScorecardTable.vue'
-import { createRound, getCourses, getRounds } from '../services/api'
+import { createRound, getCourses, getRounds, getCourse } from '../services/api'
+import { roundStore } from '../stores/round'
 import { authStore } from '../stores/auth'
 
 const playerName = computed(() => authStore.user.value?.full_name || 'Golfer')
@@ -90,6 +91,19 @@ onMounted(async () => {
     ), response.data[0])
     if (existingRound) {
       roundId.value = existingRound.id
+      try {
+        const courseResp = await getCourse(existingRound.course_id)
+        console.log('ScorecardView: existingRound selected', { existingRound })
+        console.log('ScorecardView: fetched course for existingRound', courseResp.data)
+        roundStore.setCourse(courseResp.data)
+        // set shared active round id
+        try { roundStore.setRoundId(existingRound.id) } catch {}
+        // clear demo conditions when a real round is active
+        roundStore.setConditions({ windSpeed: undefined as any, windDirection: '', temperature: undefined as any, elevation: undefined as any, note: '' })
+        roundStore.setHole(1)
+      } catch {
+        // ignore if course lookup fails
+      }
       return
     }
 
@@ -104,6 +118,13 @@ onMounted(async () => {
       score: null
     })
     roundId.value = newRound.data.id
+    console.log('ScorecardView: created new round', { newRound: newRound.data, course })
+    // set the active course/hole in the central round store so Caddie and other views update
+    roundStore.setCourse(course)
+    try { roundStore.setRoundId(newRound.data.id) } catch {}
+    // clear demo conditions when a real round is active; CourseMap will publish GPS distance into conditions
+    roundStore.setConditions({ windSpeed: undefined as any, windDirection: '', temperature: undefined as any, elevation: undefined as any, note: '' })
+    roundStore.setHole(1)
   } catch {
     roundId.value = null
   }

@@ -208,6 +208,8 @@ async function loadHoleData() {
       || availableCourses.find((item) => item.name === demoHole.courseName)
       || availableCourses[0]
     course.value = selectedCourse || { id: 5, name: demoHole.courseName, city: 'Warsaw', state: 'IN' }
+    // sync selected course into roundStore so other views (Caddie) receive the active course
+    if (selectedCourse) roundStore.setCourse(selectedCourse)
 
     if (selectedCourse?.id) {
       const courseHolesResponse = await getCourseHoles(selectedCourse.id)
@@ -276,6 +278,8 @@ watch([holeNumber, () => route.query.course, roundStore.selectedCourse], () => {
 
 function selectHole(nextHole: number) {
   router.replace({ query: { ...route.query, hole: String(nextHole) } })
+  // keep central round store in sync with selected hole
+  roundStore.setHole(nextHole)
 }
 
 function selectBagClub(club: { name: string; carry: number }) {

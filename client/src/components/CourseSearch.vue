@@ -17,7 +17,7 @@
         class="w-full rounded-full border border-[#c5d5bd] bg-white px-4 py-3 pr-24 text-[#183c2a] placeholder:text-[#7a8d7a] focus:border-[#335e42] focus:outline-none"
         @keydown.enter.prevent="searchCourses"
       />
-      <button type="button" class="absolute right-1.5 top-1.5 rounded-full bg-[#1f5d3a] px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[#effae4] disabled:opacity-50" :disabled="isSearching || query.trim().length < 2" @click="searchCourses">
+      <button type="button" class="absolute right-1.5 top-1.5 rounded-full bg-[#1f5d3a] px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[#effae4] disabled:opacity-50" :disabled="isSearching || query.trim().length < 2 || !hasMapToken" @click="searchCourses">
         {{ isSearching ? 'Searching' : 'Search' }}
       </button>
     </div>
@@ -53,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, ref } from 'vue'
+import { onBeforeUnmount, ref, onMounted } from 'vue'
 import type { Course } from '../types'
 
 const emit = defineEmits<{
@@ -67,11 +67,17 @@ const isSearching = ref(false)
 const hasSearched = ref(false)
 const errorMessage = ref('')
 const mapToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined
+const hasMapToken = Boolean(mapToken)
 let searchRequest = 0
 
 async function searchCourses() {
   const searchTerm = query.value.trim()
-  if (searchTerm.length < 2 || !mapToken) return
+  if (searchTerm.length < 2) return
+  if (!mapToken) {
+    errorMessage.value = 'Mapbox token is not configured. Add VITE_MAPBOX_TOKEN to client/.env.'
+    console.log('CourseSearch: missing VITE_MAPBOX_TOKEN — cannot perform search')
+    return
+  }
 
   const requestId = ++searchRequest
   isSearching.value = true
@@ -123,5 +129,11 @@ function selectCourse(course: Course) {
 
 onBeforeUnmount(() => {
   searchRequest += 1
+})
+
+onMounted(() => {
+  if (!hasMapToken) {
+    errorMessage.value = 'Mapbox not configured. Add VITE_MAPBOX_TOKEN to client/.env.'
+  }
 })
 </script>

@@ -25,6 +25,7 @@
 
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { roundStore } from '../stores/round'
 import mapboxgl, { type Map, type Marker } from 'mapbox-gl'
 import { Geolocation } from '@capacitor/geolocation'
 import 'mapbox-gl/dist/mapbox-gl.css'
@@ -166,6 +167,15 @@ function updateDistanceLine(player: [number, number]) {
   playerDistance.value = distanceInYards(player, pin)
   const source = map.getSource('player-pin-line') as mapboxgl.GeoJSONSource | undefined
   source?.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [player, pin] } } as GeoJSON.Feature)
+  // publish a best-effort hole distance into the shared round store so other views (Caddie) can read it
+  try {
+    const currentConditions = (roundStore.conditions && (roundStore.conditions as any).value) || {}
+    roundStore.setConditions({ ...currentConditions, holeDistance: playerDistance.value })
+    // debug: publish distance
+    try { console.log('CourseMap: published holeDistance', { holeDistance: playerDistance.value, currentConditions }) } catch {}
+  } catch {
+    // noop
+  }
 }
 
 function startLocationWatch() {
