@@ -74,7 +74,7 @@ async function searchCourses() {
   const searchTerm = query.value.trim()
   if (searchTerm.length < 2) return
   if (!mapToken) {
-    errorMessage.value = 'Mapbox token is not configured. Add VITE_MAPBOX_TOKEN to client/.env.'
+    errorMessage.value = 'Mapbox token is not configured. Add VITE_MAPBOX_TOKEN to /.env.'
     console.log('CourseSearch: missing VITE_MAPBOX_TOKEN — cannot perform search')
     return
   }
@@ -133,7 +133,7 @@ onBeforeUnmount(() => {
 
 onMounted(() => {
   if (!hasMapToken) {
-    errorMessage.value = 'Mapbox not configured. Add VITE_MAPBOX_TOKEN to client/.env.'
+    errorMessage.value = 'Mapbox not configured. Add VITE_MAPBOX_TOKEN to /.env.'
   }
 })
 </script>

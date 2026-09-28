@@ -220,7 +220,7 @@ onMounted(async () => {
   await nextTick()
   if (!mapElement.value) return
   if (!mapToken) {
-    mapError.value = 'Mapbox is not configured. Add VITE_MAPBOX_TOKEN to client/.env.'
+    mapError.value = 'Mapbox is not configured. Add VITE_MAPBOX_TOKEN to /.env.'
     return
   }
 
