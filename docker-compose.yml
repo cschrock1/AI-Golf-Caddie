@@ -25,6 +25,10 @@ services:
       APP_ENV: ${APP_ENV:-development}
       GOLF_API_KEY: ${GOLF_API_KEY}
       GOLF_API_BASE_URL: ${GOLF_API_BASE_URL:-https://golfapi.io/api/v2.3}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-6-astra}
     ports:
       - '8000:8000'
     depends_on:

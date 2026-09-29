@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.course import Course
 from app.models.hole import Hole
+from app.models.user import User
+from app.core.security import get_current_user
 from app.schemas.course import (
     CourseCreate,
     CourseImport,
@@ -84,10 +86,19 @@ def get_courses(
     return db.query(Course).all()
 
 
+@router.get("/{course_id}", response_model=CourseResponse)
+def get_course(course_id: int, db: Session = Depends(get_db)):
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+    return course
+
+
 @router.post("/import", response_model=CourseImportResponse)
 def import_course(
     payload: CourseImport,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
 ):
     hole_numbers = [hole.hole_number for hole in payload.holes]
     if len(set(hole_numbers)) != len(hole_numbers):
@@ -137,7 +148,8 @@ def import_course(
 @router.post("/", response_model=CourseResponse, status_code=status.HTTP_201_CREATED)
 def create_course(
     course: CourseCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
 ):
     db_course = Course(
         name=course.name,
@@ -156,7 +168,8 @@ def create_course(
 def update_course(
     course_id: int,
     course: CourseCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
 ):
     db_course = db.query(Course).filter(Course.id == course_id).first()
     if not db_course:
@@ -174,7 +187,8 @@ def update_course(
 @router.delete("/{course_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_course(
     course_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
 ):
     db_course = db.query(Course).filter(Course.id == course_id).first()
     if not db_course:
@@ -227,7 +241,8 @@ def get_hole(
 )
 def create_hole(
     hole: HoleCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
 ):
     course = db.query(Course).filter(Course.id == hole.course_id).first()
     if not course:

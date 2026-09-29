@@ -9,7 +9,7 @@
       ]"
     >
       <div class="mb-1 flex items-center justify-between gap-4 text-[10px] uppercase tracking-[0.18em] opacity-70">
-        <span>{{ message.role === 'user' ? 'You' : 'AI Caddie' }}</span>
+        <span>{{ message.role === 'user' ? 'You' : message.provider || 'Caddie' }}</span>
         <span>{{ message.timestamp }}</span>
       </div>
       <p>{{ message.content }}</p>

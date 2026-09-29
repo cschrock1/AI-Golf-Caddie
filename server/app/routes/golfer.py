@@ -19,8 +19,11 @@ router = APIRouter(prefix="/golfer", tags=["Golfer"])
 )
 def get_golfer_profile(
     user_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this profile")
     profile = db.query(GolferProfile).filter(
         GolferProfile.user_id == user_id
     ).first()

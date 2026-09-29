@@ -1,83 +1,55 @@
 <template>
-  <section class="rounded-[30px] border border-[#c8ff00]/45 bg-[#0d2119] p-4 shadow-[0_20px_42px_rgba(2,10,7,0.32)] sm:p-5">
+  <section class="rounded-[28px] border border-white/10 bg-[#0d1d16] p-4 shadow-[0_20px_42px_rgba(2,10,7,0.28)] sm:p-5">
     <div class="flex items-start justify-between gap-3">
       <div>
-        <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-[#c8ff00]">✦ AI caddie recommendation</p>
-        <p class="mt-3 text-4xl font-black tracking-tight text-white sm:text-5xl">{{ clubName }}</p>
-        <p class="mt-1 text-xs font-bold uppercase tracking-[0.2em] text-[#b8d8c8]">Smooth {{ tempo }}%</p>
+        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c8ff00]">Distance based · deterministic</p>
+        <h2 class="mt-2 text-xl font-black text-white">Shot suggestion</h2>
       </div>
-      <div class="rounded-full border border-[#c8ff00]/35 bg-[#142d20] px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#c8ff00]">
-        {{ confidence }}% confidence
-      </div>
+      <span v-if="recommendation" class="rounded-full border border-white/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em]" :class="recommendation.risk === 'Low' ? 'text-[#c8ff00]' : 'text-[#f2c57c]'">
+        {{ recommendation.risk }} risk
+      </span>
     </div>
 
-    <div class="mt-5 grid grid-cols-2 gap-3 text-left">
-      <div class="rounded-2xl border border-[#224236] bg-[#10271f] p-3">
-        <p class="text-[10px] uppercase tracking-[0.18em] text-[#8ca49a]">Carry</p>
-        <p class="mt-1 text-3xl font-black text-white">{{ carry }} <span class="text-xs text-[#8ca49a]">YDS</span></p>
-      </div>
-      <div class="rounded-2xl border border-[#224236] bg-[#10271f] p-3">
-        <p class="text-[10px] uppercase tracking-[0.18em] text-[#8ca49a]">Target</p>
-        <p class="mt-1 text-lg font-black leading-6 text-white">{{ target }}</p>
-      </div>
-    </div>
+    <p v-if="loading" class="mt-4 rounded-2xl border border-white/10 bg-[#10271f] p-4 text-sm text-[#a6b6ad]" role="status">Calculating from your position and saved club distances…</p>
+    <p v-else-if="error" class="mt-4 rounded-2xl border border-[#70434a] bg-[#211719] p-4 text-sm leading-6 text-[#f0b9ba]" role="status">{{ error }}</p>
+    <p v-else-if="!recommendation" class="mt-4 rounded-2xl border border-dashed border-white/15 bg-[#10271f] p-4 text-sm leading-6 text-[#a6b6ad]">Locate yourself on the mapped hole and add carry distances to your bag to get a shot suggestion.</p>
 
-    <div class="mt-3 flex items-center justify-between rounded-2xl border border-[#214335] bg-[#0b1d17] p-3">
-      <p class="text-[10px] uppercase tracking-[0.2em] text-[#8ca49a]">Landing</p>
-      <p class="text-sm font-bold uppercase tracking-[0.1em] text-[#ddf7be]">{{ landing }}</p>
-    </div>
-
-    <p class="mt-4 text-sm leading-6 text-[#e7efe9]">{{ rationale }}</p>
-
-    <button type="button" class="mt-5 w-full rounded-full px-4 py-3 text-sm font-black uppercase tracking-[0.18em] transition hover:brightness-110 focus-visible:outline-none" :class="locked ? 'border border-[#c8ff00] bg-[#142d20] text-[#c8ff00]' : 'bg-[#c8ff00] text-[#07140f]'" :aria-pressed="locked" @click="emit('lock-in')">
-      {{ locked ? 'Recommendation locked' : 'Lock in recommendation' }}
-    </button>
-
-    <div v-if="locked" class="mt-3 flex items-center gap-2 text-xs font-semibold text-[#c8ff00]" role="status">
-      <span class="h-2 w-2 rounded-full bg-[#c8ff00]" aria-hidden="true"></span>
-      Club and target saved for this hole.
-    </div>
-
-    <div class="mt-5 border-t border-[#1c3b31] pt-4">
-      <p class="text-[10px] uppercase tracking-[0.22em] text-[#8ca49a]">Alternative</p>
-      <div class="mt-2 flex items-center justify-between gap-3">
-        <div>
-          <p class="text-lg font-bold text-white">{{ alternativeClub }}</p>
-          <p class="text-xs uppercase tracking-[0.18em] text-[#8ca49a]">{{ alternativeRisk }}</p>
+    <template v-else>
+      <div class="mt-4 rounded-2xl border border-[#c8ff00]/20 bg-[#c8ff00]/5 p-4">
+        <p class="text-[10px] uppercase tracking-[0.18em] text-[#91a69a]">Suggested club</p>
+        <div class="mt-1 flex items-end justify-between gap-2">
+          <p class="text-3xl font-black tracking-tight text-white">{{ recommendation.club_name }}</p>
+          <p class="pb-1 text-sm font-bold text-[#c8ff00]">{{ recommendation.carry_yards }} yd carry</p>
         </div>
-        <span class="rounded-full border border-[#245040] bg-[#10271f] px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-[#dfeee6]">106 YDS</span>
       </div>
-    </div>
+      <div class="mt-3 grid grid-cols-2 gap-3">
+        <div class="rounded-2xl border border-white/10 bg-[#10271f] p-3">
+          <p class="text-[10px] uppercase tracking-[0.16em] text-[#91a69a]">Target</p>
+          <p class="mt-1 font-bold text-white">{{ recommendation.target_name }}</p>
+          <p class="mt-1 text-xs text-[#a6b6ad]">{{ recommendation.target_yards }} yd</p>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-[#10271f] p-3">
+          <p class="text-[10px] uppercase tracking-[0.16em] text-[#91a69a]">Alternative</p>
+          <p class="mt-1 font-bold text-white">{{ recommendation.alternative_club || '—' }}</p>
+          <p class="mt-1 text-xs text-[#a6b6ad]">{{ recommendation.alternative_carry_yards ? `${recommendation.alternative_carry_yards} yd carry` : 'No second club with a distance' }}</p>
+        </div>
+      </div>
+      <p class="mt-4 text-sm leading-6 text-[#d7e2db]">{{ recommendation.rationale }}</p>
+      <button type="button" class="mt-4 w-full rounded-full bg-[#c8ff00] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-[#07140f] transition hover:brightness-110" @click="emit('select-club', recommendation.club_id)">
+        Use {{ recommendation.club_name }}
+      </button>
+    </template>
   </section>
 </template>
 
 <script setup lang="ts">
-withDefaults(defineProps<{
-    clubName?: string
-    confidence?: number
-    carry?: number
-    tempo?: number
-    landing?: string
-    target?: string
-    rationale?: string
-    alternativeClub?: string
-    alternativeRisk?: string
-    locked?: boolean
-  }>(),
-  {
-    clubName: '9-Iron',
-    confidence: 94,
-    carry: 112,
-    tempo: 85,
-    landing: 'Soft hold',
-    target: '4 yards left of pin',
-    rationale: 'With the gusty 14 mph Pacific headwind, a smooth 9-iron should provide enough carry while keeping the ball below the wind.',
-    alternativeClub: 'Pitching Wedge',
-    alternativeRisk: 'Higher front bunker risk',
-    locked: false
-  })
+import type { Recommendation } from '../types'
 
-const emit = defineEmits<{
-  'lock-in': []
+defineProps<{
+  recommendation: Recommendation | null
+  loading: boolean
+  error: string
 }>()
+
+const emit = defineEmits<{ 'select-club': [clubId: number] }>()
 </script>

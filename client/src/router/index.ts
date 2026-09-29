@@ -1,23 +1,16 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import DashboardView from '../views/DashboardView.vue'
-import RegisterView from '../views/RegisterView.vue'
-import LoginView from '../views/LoginView.vue'
-import HoleView from '../views/HoleView.vue'
-import CaddieView from '../views/CaddieView.vue'
-import ScorecardView from '../views/ScorecardView.vue'
-import ProfileView from '../views/ProfileView.vue'
 import { authStore } from '../stores/auth'
 import { getToken } from '../services/auth'
 
 const routes = [
   { path: '/', redirect: '/login' },
-  { path: '/login', name: 'Login', component: LoginView },
-  { path: '/register', name: 'Register', component: RegisterView },
-  { path: '/dashboard', name: 'Dashboard', component: DashboardView, meta: { requiresAuth: true } },
-  { path: '/hole', name: 'Hole', component: HoleView, meta: { requiresAuth: true } },
-  { path: '/caddie', name: 'Caddie', component: CaddieView, meta: { requiresAuth: true } },
-  { path: '/scorecard', name: 'Scorecard', component: ScorecardView, meta: { requiresAuth: true } },
-  { path: '/profile', name: 'Profile', component: ProfileView, meta: { requiresAuth: true } },
+  { path: '/login', name: 'Login', component: () => import('../views/LoginView.vue') },
+  { path: '/register', name: 'Register', component: () => import('../views/RegisterView.vue') },
+  { path: '/dashboard', name: 'Dashboard', component: () => import('../views/DashboardView.vue'), meta: { requiresAuth: true } },
+  { path: '/hole', name: 'Hole', component: () => import('../views/HoleView.vue'), meta: { requiresAuth: true } },
+  { path: '/caddie', name: 'Caddie', component: () => import('../views/CaddieView.vue'), meta: { requiresAuth: true } },
+  { path: '/scorecard', name: 'Scorecard', component: () => import('../views/ScorecardView.vue'), meta: { requiresAuth: true } },
+  { path: '/profile', name: 'Profile', component: () => import('../views/ProfileView.vue'), meta: { requiresAuth: true } },
   { path: '/bag', redirect: '/profile' }
 ]
 

@@ -6,6 +6,7 @@ from app.models.course import Course
 from app.models.round import Round
 from app.models.user import User
 from app.schemas.round import RoundCreate, RoundResponse
+from app.core.security import get_current_user
 
 router = APIRouter(prefix="/rounds", tags=["Rounds"])
 
@@ -13,8 +14,11 @@ router = APIRouter(prefix="/rounds", tags=["Rounds"])
 @router.get("/", response_model=list[RoundResponse])
 def get_rounds(
     user_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view these rounds")
     return db.query(Round).filter(
         Round.user_id == user_id
     ).all()
@@ -23,11 +27,11 @@ def get_rounds(
 @router.post("/", response_model=RoundResponse, status_code=status.HTTP_201_CREATED)
 def create_round(
     round_data: RoundCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    user = db.query(User).filter(User.id == round_data.user_id).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    if current_user.id != round_data.user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to create a round for this user")
 
     course = db.query(Course).filter(Course.id == round_data.course_id).first()
     if not course:
@@ -51,12 +55,13 @@ def create_round(
 def update_round(
     round_id: int,
     round_data: RoundCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     db_round = db.query(Round).filter(Round.id == round_id).first()
     if not db_round:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Round not found")
-    if db_round.user_id != round_data.user_id:
+    if db_round.user_id != current_user.id or round_data.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to update this round")
 
     db_round.user_id = round_data.user_id
@@ -73,12 +78,13 @@ def update_round(
 def delete_round(
     round_id: int,
     user_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     db_round = db.query(Round).filter(Round.id == round_id).first()
     if not db_round:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Round not found")
-    if db_round.user_id != user_id:
+    if db_round.user_id != user_id or current_user.id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to delete this round")
 
     db.delete(db_round)

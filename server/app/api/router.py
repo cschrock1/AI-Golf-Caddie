@@ -8,6 +8,9 @@ from app.routes.rounds import router as rounds_router
 from app.routes.shots import router as shots_router
 from app.routes.auth import router as auth_router
 from app.routes.round_scores import router as round_scores_router
+from app.routes.recommendations import router as recommendations_router
+from app.routes.weather import router as weather_router
+from app.routes.caddie import router as caddie_router
 
 api_router = APIRouter(prefix="/api")
 
@@ -18,4 +21,7 @@ api_router.include_router(golfer_router)
 api_router.include_router(rounds_router)
 api_router.include_router(shots_router)
 api_router.include_router(round_scores_router)
+api_router.include_router(recommendations_router)
+api_router.include_router(weather_router)
+api_router.include_router(caddie_router)
 api_router.include_router(auth_router)

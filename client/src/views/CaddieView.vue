@@ -5,8 +5,8 @@
     <section class="mt-6 rounded-[30px] border border-[#1d3a2d] bg-[#0d2119] p-5">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-[10px] uppercase tracking-[0.24em] text-[#8ca49a]">AI Caddie</p>
-          <h1 class="mt-2 text-3xl font-black text-white">Course briefing</h1>
+          <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-[#c8ff00]">Caddie preview</p>
+          <h1 class="mt-2 text-3xl font-black tracking-tight text-white">Course briefing</h1>
         </div>
         <div class="text-right text-[10px] uppercase tracking-[0.18em] text-[#8ca49a]">
           <p>{{ currentTime }}</p>
@@ -14,32 +14,33 @@
       </div>
 
       <div class="mt-5 grid gap-3 sm:grid-cols-4">
-        <div class="rounded-2xl border border-[#214335] bg-[#10271f] p-3">
-          <p class="text-[10px] uppercase tracking-[0.16em] text-[#8ca49a]">Course</p>
+          <div class="rounded-2xl border border-white/10 bg-[#10271f] p-3">
+            <p class="text-[10px] uppercase tracking-[0.16em] text-[#91a69a]">Course</p>
           <p class="mt-2 text-base font-bold text-white">{{ courseName ?? 'No active round' }}</p>
         </div>
-        <div class="rounded-2xl border border-[#214335] bg-[#10271f] p-3">
-          <p class="text-[10px] uppercase tracking-[0.16em] text-[#8ca49a]">Hole</p>
+          <div class="rounded-2xl border border-white/10 bg-[#10271f] p-3">
+            <p class="text-[10px] uppercase tracking-[0.16em] text-[#91a69a]">Hole</p>
           <p class="mt-2 text-base font-bold text-white">{{ holeNumber }}</p>
         </div>
-        <div class="rounded-2xl border border-[#214335] bg-[#10271f] p-3">
-          <p class="text-[10px] uppercase tracking-[0.16em] text-[#8ca49a]">Distance</p>
+          <div class="rounded-2xl border border-white/10 bg-[#10271f] p-3">
+            <p class="text-[10px] uppercase tracking-[0.16em] text-[#91a69a]">Distance</p>
           <p class="mt-2 text-base font-bold text-white">{{ dist != null ? dist + ' YDS' : 'Distance unavailable' }}</p>
         </div>
-        <div class="rounded-2xl border border-[#214335] bg-[#10271f] p-3">
-          <p class="text-[10px] uppercase tracking-[0.16em] text-[#8ca49a]">Wind</p>
-          <p class="mt-2 text-base font-bold text-white">{{ conditions.windSpeed != null ? conditions.windSpeed + ' MPH' : 'Wind unavailable' }}</p>
+          <div class="rounded-2xl border border-white/10 bg-[#10271f] p-3">
+            <p class="text-[10px] uppercase tracking-[0.16em] text-[#91a69a]">Wind</p>
+          <p class="mt-2 text-base font-bold text-white">{{ conditions.windSpeed != null ? conditions.windSpeed + ' MPH' : 'Unavailable' }}</p>
         </div>
       </div>
     </section>
 
-    <section class="mt-6 rounded-[30px] border border-[#1d3a2d] bg-[#0d2119] p-4 sm:p-5">
+    <section class="mt-6 rounded-[30px] border border-white/10 bg-[#0d1d16] p-4 shadow-[0_18px_45px_rgba(0,0,0,0.18)] sm:p-5">
+      <p class="mb-4 text-xs leading-5 text-[#91a69a]">This prototype uses a local sample response. It is not connected to an AI service yet.</p>
       <div class="space-y-4">
         <ChatMessage v-for="message in chatMessages" :key="message.id" :message="message" />
 
         <div v-if="isLoading" class="flex justify-start">
           <div class="max-w-[85%] rounded-[22px] border border-[#1d3a2d] bg-[#10271f] px-3 py-2.5 text-sm text-[#dfeee6]">
-            Thinking through the wind, green, and miss pattern...
+            Building an explanation from the current hole and your club distances…
           </div>
         </div>
 
@@ -49,7 +50,7 @@
       </div>
 
       <form class="mt-5 flex gap-3" @submit.prevent="sendMessage">
-        <label class="sr-only" for="chat-input">Ask AI Caddie</label>
+        <label class="sr-only" for="chat-input">Ask the caddie preview</label>
         <input
           id="chat-input"
           v-model="newMessage"
@@ -70,28 +71,19 @@ import { computed, ref, watch } from 'vue'
 import AppHeader from '../components/AppHeader.vue'
 import ChatMessage from '../components/ChatMessage.vue'
 import { roundStore } from '../stores/round'
-import { demoCourse, stonehedgeHoles } from '../mock/hole'
+import { getCaddieExplanation, getHole } from '../services/api'
 
 const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
-// Force the AI Caddie to use Stonehedge mock course only
-const caddieCourse = ref({ ...demoCourse, holes: stonehedgeHoles })
-const courseName = computed(() => caddieCourse.value?.name ?? null)
+const selectedCourse = roundStore.selectedCourse
+const courseName = computed(() => selectedCourse.value?.name ?? null)
 const holeNumber = computed(() => roundStore.selectedHole.value ?? 1)
 const conditions = roundStore.conditions
-
-// debug: log active selection at component setup
-try {
-  console.log('CaddieView: startup selectedCourse', roundStore.selectedCourse?.value)
-  console.log('CaddieView: startup selectedHole', roundStore.selectedHole.value)
-  console.log('CaddieView: startup conditions', (roundStore.conditions as any).value)
-  console.log('CaddieView: startup selectedRoundId', (roundStore as any).selectedRoundId?.value)
-} catch {}
 
 // derive a best-effort distance: use recommendation or conditions or placeholder
 const dist = computed(() => {
   const rec = roundStore.recommendation.value
-  if (rec && (rec as any).distance) return (rec as any).distance
+  if (rec?.target_yards) return rec.target_yards
   if (conditions.value && (conditions.value.distance || (conditions.value as any).holeDistance)) return conditions.value.distance ?? (conditions.value as any).holeDistance
   return null
 })
@@ -112,7 +104,8 @@ const chatMessages = ref([
     id: `system-${Date.now()}`,
     role: 'assistant',
     content: briefingText(),
-    timestamp: currentTime
+    timestamp: currentTime,
+    provider: 'Course briefing'
   }
 ])
 const newMessage = ref('')
@@ -141,28 +134,33 @@ async function sendMessage() {
   newMessage.value = ''
   isLoading.value = true
 
-  // build context payload from active round and golfer data
-  const context = {
-    courseName: courseName.value,
-    courseId: caddieCourse.value?.id ?? null,
-    holeNumber: holeNumber.value,
-    par: caddieCourse.value?.holes?.find?.((h: any) => h.hole_number === holeNumber.value)?.par ?? null,
-    distance: dist.value,
-    wind: conditions.value?.windSpeed ?? null,
-    golferProfile: null,
-    clubs: null
-  }
-
-  // Create a safe, context-aware assistant reply (no invented courses)
-  setTimeout(() => {
-    let reply = ''
-    if (context.courseName) reply += `You're playing Hole ${context.holeNumber} at ${context.courseName}. `
-    if (context.distance != null) reply += `You have approximately ${context.distance} yards to the target. `
-    if (context.wind != null) reply += `Wind is ${context.wind} mph. `
-    reply += `Based on your question: "${text}", consider attacking the center of the green to reduce wind effects.`
-
-    chatMessages.value.push({ id: `assistant-${Date.now()}`, role: 'assistant', content: reply.trim(), timestamp: 'Now' })
+  try {
+    const course = selectedCourse.value
+    const playerLocation = conditions.value.playerLocation
+    if (!course?.id || !playerLocation) {
+      throw new Error('Go to the mapped hole and use Locate before asking for a shot explanation.')
+    }
+    const holeResponse = await getHole(course.id, holeNumber.value)
+    const response = await getCaddieExplanation(holeResponse.data.id, playerLocation, text)
+    roundStore.setRecommendation(response.data.recommendation)
+    chatMessages.value.push({
+      id: `assistant-${Date.now()}`,
+      role: 'assistant',
+      content: response.data.explanation,
+      timestamp: 'Now',
+      provider: response.data.explanation_source === 'openai' ? 'AI Caddie' : 'Caddie fallback'
+    })
+  } catch (requestError: unknown) {
+    const detail = (requestError as { response?: { data?: { detail?: string } }; message?: string })
+    chatMessages.value.push({
+      id: `assistant-${Date.now()}`,
+      role: 'assistant',
+      content: detail.response?.data?.detail || detail.message || 'Unable to create a shot explanation right now.',
+      timestamp: 'Now',
+      provider: 'Caddie'
+    })
+  } finally {
     isLoading.value = false
-  }, 700)
+  }
 }
 </script>

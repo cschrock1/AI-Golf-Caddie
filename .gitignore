@@ -20,3 +20,7 @@ htmlcov/
 
 # Local VS Code settings (keep if not machine-specific)
 .vscode/
+
+ai_golf_caddie_backup.sql
+
+!.env.example

@@ -1,6 +1,5 @@
 import { computed, ref } from 'vue'
 import type { Club, Conditions, Course, Recommendation } from '../types'
-import { demoConditions, demoRecommendation } from '../mock/recommendation'
 
 function storedCourse() {
   if (typeof window === 'undefined') return null
@@ -24,8 +23,8 @@ function storedRoundId() {
 const selectedRoundId = ref<number | null>(storedRoundId())
 const selectedHole = ref<number>(1)
 const selectedClub = ref<Club | null>(null)
-const recommendation = ref<Recommendation>(demoRecommendation)
-const conditions = ref<Conditions>(demoConditions)
+const recommendation = ref<Recommendation | null>(null)
+const conditions = ref<Conditions>({})
 
 function setCourse(course: Course | null) {
   selectedCourse.value = course
@@ -55,6 +54,10 @@ function setRecommendation(nextRecommendation: Recommendation) {
   recommendation.value = nextRecommendation
 }
 
+function clearRecommendation() {
+  recommendation.value = null
+}
+
 function setConditions(nextConditions: Conditions) {
   conditions.value = nextConditions
 }
@@ -71,5 +74,6 @@ export const roundStore = {
   setHole,
   setClub,
   setRecommendation,
+  clearRecommendation,
   setConditions
 }

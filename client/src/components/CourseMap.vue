@@ -29,38 +29,54 @@ import { roundStore } from '../stores/round'
 import mapboxgl, { type Map, type Marker } from 'mapbox-gl'
 import { Geolocation } from '@capacitor/geolocation'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import type { Course, GeoJsonMultiPolygon, GeoJsonPoint, GeoJsonPolygon, Hole } from '../types'
+import type { Course, GeoJsonArea, GeoJsonPoint, GeoJsonPosition, Hole } from '../types'
 
-const props = withDefaults(defineProps<{ hole: Hole | null; course?: Course | null; fullScreen?: boolean }>(), { course: null, fullScreen: false })
+const props = withDefaults(defineProps<{ hole: Hole | null; course?: Course | null; target?: GeoJsonPosition | null; fullScreen?: boolean }>(), { course: null, target: null, fullScreen: false })
 const mapElement = ref<HTMLElement | null>(null)
 const isLocating = ref(false)
 const locationError = ref('')
 const mapError = ref('')
 const playerDistance = ref<number | null>(null)
-const mapToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined
+const mapToken = (import.meta.env.VITE_MAPBOX_TOKEN || import.meta.env.VITE_MAPBOX_ACCESS_TOKEN) as string | undefined
 let map: Map | null = null
 let teeMarker: Marker | null = null
 let pinMarker: Marker | null = null
+let targetMarker: Marker | null = null
 let playerMarker: Marker | null = null
 let locationWatchId: string | null = null
 let geocodedCourse = ''
 
-function pointCoordinates(point: GeoJsonPoint | null | undefined): [number, number] | null {
-  return point ? point.coordinates : null
+function isPosition(position: GeoJsonPosition | null | undefined): position is GeoJsonPosition {
+  return Boolean(position && Number.isFinite(position[0]) && Number.isFinite(position[1]))
 }
 
-function markerElement(kind: 'tee' | 'pin' | 'player', label: string) {
+function pointCoordinates(point: GeoJsonPoint | null | undefined): GeoJsonPosition | null {
+  return point && isPosition(point.coordinates) ? point.coordinates : null
+}
+
+function markerElement(kind: 'tee' | 'pin' | 'player' | 'target', label: string) {
   const element = document.createElement('div')
   element.className = `course-marker course-marker-${kind}`
   element.textContent = label
   return element
 }
 
-function geometryFeature(geometry: GeoJsonPolygon | GeoJsonMultiPolygon | null | undefined, kind: string) {
+interface HoleAreaFeature {
+  type: 'Feature'
+  properties: { kind: string }
+  geometry: GeoJsonArea
+}
+
+interface HoleFeatureCollection {
+  type: 'FeatureCollection'
+  features: HoleAreaFeature[]
+}
+
+function geometryFeature(geometry: GeoJsonArea | null | undefined, kind: string): HoleAreaFeature | null {
   return geometry ? { type: 'Feature', properties: { kind }, geometry } : null
 }
 
-function holeFeatureCollection() {
+function holeFeatureCollection(): HoleFeatureCollection {
   const hole = props.hole
   return {
     type: 'FeatureCollection',
@@ -69,8 +85,15 @@ function holeFeatureCollection() {
       geometryFeature(hole?.green_geometry, 'green'),
       geometryFeature(hole?.bunker_geometry, 'bunker'),
       geometryFeature(hole?.water_geometry, 'water')
-    ].filter(Boolean)
+    ].filter((feature): feature is HoleAreaFeature => feature !== null)
   }
+}
+
+function areaPositions(geometry: GeoJsonArea | null | undefined): GeoJsonPosition[] {
+  if (!geometry) return []
+  return geometry.type === 'Polygon'
+    ? geometry.coordinates.flat(1)
+    : geometry.coordinates.flat(2)
 }
 
 async function centerOnCourse() {
@@ -114,29 +137,47 @@ async function centerOnCourse() {
 }
 
 async function updateMarkers() {
-  if (!map || !props.hole) return
+  if (!map) return
   teeMarker?.remove()
   pinMarker?.remove()
+  targetMarker?.remove()
+  teeMarker = null
+  pinMarker = null
+  targetMarker = null
+  if (!props.hole) return
+
   const tee = pointCoordinates(props.hole.tee_location)
   const pin = pointCoordinates(props.hole.pin_location)
   if (tee) teeMarker = new mapboxgl.Marker({ element: markerElement('tee', 'TEE'), anchor: 'bottom' }).setLngLat(tee).setPopup(new mapboxgl.Popup().setText('Tee')).addTo(map)
   if (pin) pinMarker = new mapboxgl.Marker({ element: markerElement('pin', 'PIN'), anchor: 'bottom' }).setLngLat(pin).setPopup(new mapboxgl.Popup().setText('Pin')).addTo(map)
+  if (props.target && isPosition(props.target)) targetMarker = new mapboxgl.Marker({ element: markerElement('target', 'AIM'), anchor: 'bottom' }).setLngLat(props.target).setPopup(new mapboxgl.Popup().setText('Suggested target')).addTo(map)
 
-  const points = [tee, pin].filter((point): point is [number, number] => point !== null)
-  if (points.length === 2) {
+  const points = [
+    ...areaPositions(props.hole.fairway_geometry),
+    ...areaPositions(props.hole.green_geometry),
+    ...areaPositions(props.hole.bunker_geometry),
+    ...areaPositions(props.hole.water_geometry),
+    tee,
+    pin,
+    props.target
+  ].filter((point): point is GeoJsonPosition => isPosition(point))
+  if (points.length > 1) {
     const bounds = points.reduce((result, point) => result.extend(point), new mapboxgl.LngLatBounds(points[0], points[0]))
     map.fitBounds(bounds, { padding: 44, maxZoom: 17 })
   } else if (points.length === 1) {
-    map.setCenter(points[0])
+    map.flyTo({ center: points[0], zoom: 17 })
   } else {
     await centerOnCourse()
   }
+
+  const playerPosition = playerMarker?.getLngLat()
+  if (playerPosition) updateDistanceLine([playerPosition.lng, playerPosition.lat])
 }
 
 function updateCourseLayers() {
   if (!map || !map.isStyleLoaded()) return
   const source = map.getSource('hole-features') as mapboxgl.GeoJSONSource | undefined
-  source?.setData(holeFeatureCollection() as GeoJSON.FeatureCollection)
+  source?.setData(holeFeatureCollection() as Parameters<mapboxgl.GeoJSONSource['setData']>[0])
   updateMarkers()
 }
 
@@ -166,11 +207,11 @@ function updateDistanceLine(player: [number, number]) {
   const pin = props.hole.pin_location.coordinates
   playerDistance.value = distanceInYards(player, pin)
   const source = map.getSource('player-pin-line') as mapboxgl.GeoJSONSource | undefined
-  source?.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [player, pin] } } as GeoJSON.Feature)
+  source?.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [player, pin] } } as Parameters<mapboxgl.GeoJSONSource['setData']>[0])
   // publish a best-effort hole distance into the shared round store so other views (Caddie) can read it
   try {
     const currentConditions = (roundStore.conditions && (roundStore.conditions as any).value) || {}
-    roundStore.setConditions({ ...currentConditions, holeDistance: playerDistance.value })
+    roundStore.setConditions({ ...currentConditions, holeDistance: playerDistance.value, playerLocation: position })
     // debug: publish distance
     try { console.log('CourseMap: published holeDistance', { holeDistance: playerDistance.value, currentConditions }) } catch {}
   } catch {
@@ -234,7 +275,7 @@ onMounted(async () => {
   })
   map.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'bottom-right')
   map.on('load', () => {
-    map?.addSource('hole-features', { type: 'geojson', data: holeFeatureCollection() as GeoJSON.FeatureCollection })
+    map?.addSource('hole-features', { type: 'geojson', data: holeFeatureCollection() as Parameters<mapboxgl.GeoJSONSource['setData']>[0] })
     map?.addSource('player-pin-line', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
     map?.addLayer({ id: 'player-pin-line', type: 'line', source: 'player-pin-line', paint: { 'line-color': '#c8ff00', 'line-width': 3, 'line-dasharray': [2, 2] } })
     map?.addLayer({ id: 'hole-fairway', type: 'fill', source: 'hole-features', filter: ['==', ['get', 'kind'], 'fairway'], paint: { 'fill-color': '#44775a', 'fill-opacity': 0.4 } })
@@ -246,11 +287,12 @@ onMounted(async () => {
   map.on('error', () => { mapError.value = 'Mapbox could not load the map. Check the token and network connection.' })
 })
 
-watch(() => [props.hole, props.course], updateCourseLayers, { deep: true })
+watch(() => [props.hole, props.course, props.target], updateCourseLayers, { deep: true })
 
 onBeforeUnmount(() => {
   teeMarker?.remove()
   pinMarker?.remove()
+  targetMarker?.remove()
   playerMarker?.remove()
   if (locationWatchId !== null) void Geolocation.clearWatch({ id: locationWatchId })
   map?.remove()
@@ -277,6 +319,12 @@ onBeforeUnmount(() => {
 .course-marker-pin {
   border-color: #07140f;
   background: #c8ff00;
+  color: #07140f;
+}
+
+.course-marker-target {
+  border-color: #07140f;
+  background: #ffffff;
   color: #07140f;
 }
 

@@ -313,7 +313,14 @@ docker compose up --build
 ```
 
 API Docs: http://localhost:8000/docs
-Health: http://localhost:8000/api/v1/health
+Health: http://localhost:8000/api/health
 
 Security: Do not commit `.env` with secrets. Use `.env.example` as a template.
 
+## Current live round features
+
+Copy `.env.example` to `.env` and set the database URL, JWT secret, Mapbox token, and (optionally) the server-side `OPENAI_API_KEY`. For the iOS app, set `VITE_MOBILE_API_URL` to the backend address reachable from the phone. Never put the OpenAI key in a `VITE_` variable.
+
+The frontend course picker lists saved backend courses and shows how many holes are mapped. Hole navigation and scorecards include mapped holes only. Stonehedge currently has Hole 1 mapped; holes 2–18 are intentionally not synthesized. The map's Locate action supplies the position used by the deterministic recommendation endpoint. Current weather is requested for the mapped hole location. Shot logging records the selected bag club, distance to the target before/after the shot when available, and the golfer-selected result.
+
+`POST /api/recommendations/` computes a club suggestion from the golfer's saved carry distances, current GPS position, pin, and mapped bunker geometry. `GET /api/weather/current` returns current Open-Meteo conditions for a course/hole with a mapped point. `POST /api/caddie/explain` explains the computed recommendation through the OpenAI Responses API when `OPENAI_API_KEY` is configured; otherwise it returns a deterministic explanation. The API key remains server-side. See the [OpenAI text generation guide](https://developers.openai.com/api/docs/guides/text) for the Responses API behavior used by this integration.

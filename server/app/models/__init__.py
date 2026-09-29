@@ -5,3 +5,4 @@ from app.models.course import Course
 from app.models.hole import Hole
 from app.models.round import Round
 from app.models.shot import Shot
+from app.models.round_score import RoundScore

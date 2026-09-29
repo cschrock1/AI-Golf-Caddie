@@ -1,12 +1,12 @@
 <template>
-  <nav class="fixed inset-x-0 bottom-0 z-40 border-t border-[#bfd4b0] bg-[#f7faf4]/95 backdrop-blur-sm">
+  <nav class="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#07150f]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl">
     <div class="mx-auto grid max-w-4xl grid-cols-5 gap-1 px-2 py-2 sm:gap-2">
       <button
         v-for="item in navItems"
         :key="item.to"
         type="button"
-        class="flex flex-col items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-medium uppercase tracking-[0.15em] transition"
-        :class="isActive(item.to) ? 'bg-[#1f5d3a] text-[#effae4]' : 'text-[#425a46] hover:bg-[#edf5ea] hover:text-[#183c2a]'"
+        class="flex min-h-14 flex-col items-center justify-center rounded-2xl px-2 py-2 text-[9px] font-semibold uppercase tracking-[0.12em] transition sm:text-[10px]"
+        :class="isActive(item.to) ? 'bg-[#c8ff00] text-[#07140f] shadow-[0_4px_18px_rgba(200,255,0,0.16)]' : 'text-[#9aada2] hover:bg-white/5 hover:text-white'"
         @click="go(item.to)"
       >
         <span class="mb-1 text-base" aria-hidden="true">{{ item.icon }}</span>
@@ -17,7 +17,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
@@ -34,7 +33,6 @@ const navItems = [
 const isActive = (path: string) => route.path.startsWith(path)
 const go = (path: string) => router.push(path)
 
-const isBottomNavVisible = computed(() => !['/login', '/register'].includes(route.path))
 </script>
 
 <style scoped>

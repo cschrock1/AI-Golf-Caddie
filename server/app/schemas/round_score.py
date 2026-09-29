@@ -1,11 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class RoundScoreBase(BaseModel):
     round_id: int | None = None
     hole_id: int | None = None
     hole_number: int | None = None
-    strokes: int
+    strokes: int = Field(..., ge=1, le=20)
 
 
 class RoundScoreCreate(RoundScoreBase):

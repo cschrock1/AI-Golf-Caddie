@@ -27,25 +27,29 @@ export interface Hole {
   yardage: number
   tee_location?: GeoJsonPoint | null
   pin_location?: GeoJsonPoint | null
-  green_geometry?: GeoJsonPolygon | GeoJsonMultiPolygon | null
-  fairway_geometry?: GeoJsonPolygon | null
-  bunker_geometry?: GeoJsonMultiPolygon | null
-  water_geometry?: GeoJsonMultiPolygon | null
+  green_geometry?: GeoJsonArea | null
+  fairway_geometry?: GeoJsonArea | null
+  bunker_geometry?: GeoJsonArea | null
+  water_geometry?: GeoJsonArea | null
 }
+
+export type GeoJsonArea = GeoJsonPolygon | GeoJsonMultiPolygon
 
 export interface GeoJsonPoint {
   type: 'Point'
-  coordinates: [number, number]
+  coordinates: GeoJsonPosition
 }
+
+export type GeoJsonPosition = [longitude: number, latitude: number]
 
 export interface GeoJsonPolygon {
   type: 'Polygon'
-  coordinates: number[][][]
+  coordinates: GeoJsonPosition[][]
 }
 
 export interface GeoJsonMultiPolygon {
   type: 'MultiPolygon'
-  coordinates: number[][][][]
+  coordinates: GeoJsonPosition[][][]
 }
 
 export interface ApiErrorResponse {
@@ -72,32 +76,36 @@ export interface Round {
 export interface Shot {
   id: number
   round_id: number
-  club_id?: number | null
-  hole_id?: number | null
-  distance?: number | null
-  notes?: string | null
+  club_id: number
+  hole_id: number
+  start_distance?: number | null
+  end_distance?: number | null
+  result?: string | null
 }
 
 export interface Conditions {
-  windSpeed: number
-  windDirection: string
-  temperature: number
-  elevation?: number
-  note: string
+  windSpeed?: number | null
+  windDirectionDegrees?: number | null
+  temperature?: number | null
+  observedAt?: string | null
+  timezone?: string | null
+  source?: string | null
+  note?: string | null
+  holeDistance?: number | null
+  playerLocation?: GeoJsonPosition | null
 }
 
 export interface Recommendation {
-  clubName: string
-  confidence: number
-  carry: number
-  total: number
-  tempo: number
-  landing: string
-  target: string
+  club_id: number
+  club_name: string
+  carry_yards: number
+  target_yards: number
+  target_location: GeoJsonPosition
+  target_name: string
+  risk: 'Low' | 'Medium' | 'High'
   rationale: string
-  alternativeClub: string
-  alternativeRisk: string
-  riskLevel: 'Low' | 'Medium' | 'High'
+  alternative_club?: string | null
+  alternative_carry_yards?: number | null
 }
 
 export interface ChatMessage {
@@ -105,4 +113,5 @@ export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
   timestamp: string
+  provider?: string
 }

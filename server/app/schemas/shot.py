@@ -7,7 +7,7 @@ class ShotCreate(BaseModel):
     club_id: int
     start_distance: float | None = Field(default=None, ge=0)
     end_distance: float | None = Field(default=None, ge=0)
-    result: str | None = None
+    result: str | None = Field(default=None, max_length=40)
 
 
 class ShotResponse(BaseModel):
