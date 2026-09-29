@@ -89,6 +89,34 @@ function holeFeatureCollection(): HoleFeatureCollection {
   }
 }
 
+function holeCoordinates(): GeoJsonPosition[] {
+  const hole = props.hole
+  return [
+    ...areaPositions(hole?.fairway_geometry),
+    ...areaPositions(hole?.green_geometry),
+    ...areaPositions(hole?.bunker_geometry),
+    ...areaPositions(hole?.water_geometry),
+    pointCoordinates(hole?.tee_location),
+    pointCoordinates(hole?.pin_location),
+    props.target
+  ].filter((point): point is GeoJsonPosition => isPosition(point))
+}
+
+function holeBearing(): number | null {
+  const tee = pointCoordinates(props.hole?.tee_location)
+  const green = pointCoordinates(props.hole?.pin_location)
+  if (!tee || !green) return null
+
+  const toRadians = Math.PI / 180
+  const latitude1 = tee[1] * toRadians
+  const latitude2 = green[1] * toRadians
+  const longitudeDelta = (green[0] - tee[0]) * toRadians
+  const y = Math.sin(longitudeDelta) * Math.cos(latitude2)
+  const x = Math.cos(latitude1) * Math.sin(latitude2)
+    - Math.sin(latitude1) * Math.cos(latitude2) * Math.cos(longitudeDelta)
+  return (Math.atan2(y, x) / toRadians + 360) % 360
+}
+
 function areaPositions(geometry: GeoJsonArea | null | undefined): GeoJsonPosition[] {
   if (!geometry) return []
   return geometry.type === 'Polygon'
@@ -144,7 +172,10 @@ async function updateMarkers() {
   teeMarker = null
   pinMarker = null
   targetMarker = null
-  if (!props.hole) return
+  if (!props.hole) {
+    await centerOnCourse()
+    return
+  }
 
   const tee = pointCoordinates(props.hole.tee_location)
   const pin = pointCoordinates(props.hole.pin_location)
@@ -152,20 +183,13 @@ async function updateMarkers() {
   if (pin) pinMarker = new mapboxgl.Marker({ element: markerElement('pin', 'PIN'), anchor: 'bottom' }).setLngLat(pin).setPopup(new mapboxgl.Popup().setText('Pin')).addTo(map)
   if (props.target && isPosition(props.target)) targetMarker = new mapboxgl.Marker({ element: markerElement('target', 'AIM'), anchor: 'bottom' }).setLngLat(props.target).setPopup(new mapboxgl.Popup().setText('Suggested target')).addTo(map)
 
-  const points = [
-    ...areaPositions(props.hole.fairway_geometry),
-    ...areaPositions(props.hole.green_geometry),
-    ...areaPositions(props.hole.bunker_geometry),
-    ...areaPositions(props.hole.water_geometry),
-    tee,
-    pin,
-    props.target
-  ].filter((point): point is GeoJsonPosition => isPosition(point))
+  const points = holeCoordinates()
+  const bearing = holeBearing()
   if (points.length > 1) {
     const bounds = points.reduce((result, point) => result.extend(point), new mapboxgl.LngLatBounds(points[0], points[0]))
-    map.fitBounds(bounds, { padding: 44, maxZoom: 17 })
+    map.fitBounds(bounds, { padding: 44, maxZoom: 17, bearing: bearing ?? 0 })
   } else if (points.length === 1) {
-    map.flyTo({ center: points[0], zoom: 17 })
+    map.flyTo({ center: points[0], zoom: 17, bearing: bearing ?? 0 })
   } else {
     await centerOnCourse()
   }
@@ -211,9 +235,7 @@ function updateDistanceLine(player: [number, number]) {
   // publish a best-effort hole distance into the shared round store so other views (Caddie) can read it
   try {
     const currentConditions = (roundStore.conditions && (roundStore.conditions as any).value) || {}
-    roundStore.setConditions({ ...currentConditions, holeDistance: playerDistance.value, playerLocation: position })
-    // debug: publish distance
-    try { console.log('CourseMap: published holeDistance', { holeDistance: playerDistance.value, currentConditions }) } catch {}
+    roundStore.setConditions({ ...currentConditions, holeDistance: playerDistance.value, playerLocation: player })
   } catch {
     // noop
   }
@@ -266,11 +288,15 @@ onMounted(async () => {
   }
 
   mapboxgl.accessToken = mapToken
+  const initialPoints = holeCoordinates()
+  const initialCenter = initialPoints[0] || props.course?.map_center || [0, 0]
+  const initialBearing = holeBearing()
   map = new mapboxgl.Map({
     container: mapElement.value,
     style: 'mapbox://styles/mapbox/satellite-streets-v12',
-    center: [-98.5795, 39.8283],
-    zoom: 3,
+    center: initialCenter,
+    zoom: initialPoints.length ? 16 : props.course?.map_center ? 14 : 1,
+    bearing: initialBearing ?? 0,
     attributionControl: true
   })
   map.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'bottom-right')
