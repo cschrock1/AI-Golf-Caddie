@@ -1,46 +1,44 @@
 # AI Golf Caddie
 
-AI Golf Caddie is a full-stack golf application for tracking clubs, logging shots, reviewing course data, and getting helpful club recommendations. The app includes a Vue frontend, a Python FastAPI backend, and PostgreSQL/PostGIS for the data layer.
+AI Golf Caddie is a golf app for saving clubs and carry distances, exploring course data, logging shots, and getting club recommendations. It has a Vue web app, a FastAPI API, and a PostgreSQL database with PostGIS.
 
-## What this app includes
+## Use the hosted website
 
-- User registration and login
-- Golfer profile and saved clubs with carry distances
-- Course and hole data with mapped locations where available
-- Shot logging during a round
-- Personalized club recommendations based on distance to the target and the golfer's bag
-- Current weather lookup for a mapped course hole
-- Optional AI explanation for a recommendation when an OpenAI key is configured
-- Mobile-friendly frontend with Capacitor support
+The deployed website is:
 
-## Project structure
+- **Frontend:** <https://ai-golf-caddie-web-77sj.onrender.com>
+- **API health check:** <https://ai-golf-caddie-api-77sj.onrender.com/api/health>
 
-```text
-ai-golf-caddie/
-├── client/              # Vue 3 frontend
-├── server/              # FastAPI backend
-├── database/            # PostgreSQL/PostGIS setup
-├── docker-compose.yml   # Local database and backend stack
-├── .env.example         # Example local environment file
-├── README.md
-└── package.json
-```
+Open the frontend link in a browser and register an account. The frontend talks to the hosted API and Supabase database. Accounts created on a local development database are separate from hosted accounts; register again on the hosted site.
 
-## Quick start
+The same frontend link works in a phone browser. The separate Capacitor iOS app uses `VITE_MOBILE_API_URL`; for a hosted iOS build, set it to the hosted API URL with `/api` and rebuild/sync the iOS app. A local iOS development build can use the computer's LAN address instead.
 
-1. Copy `.env.example` then create and paste into `.env` file.
-2. Update the environment values for your local setup.
-3. Start the app:
+## Start locally on a new computer
+
+You do not need Python, PostgreSQL, or the app's JavaScript/Python packages installed ahead of time. The first setup needs an internet connection so Docker, Node.js, and project dependencies can be downloaded.
+
+### Requirements
+
+- A supported 64-bit Windows, macOS, or Linux computer. About 8 GB of memory and several GB of free disk space are recommended for a local development setup.
+- Docker Desktop on Windows/macOS, or Docker Engine with the Compose plugin on Linux.
+- Node.js LTS, which includes npm.
+- Internet access for initial downloads.
+
+Download and extract the project ZIP from its GitHub repository. Open a terminal in the extracted `AI-Golf-Caddie` folder. No Git installation is required if you use the ZIP download.
+
+### Start the API and database
+
+Copy `.env.example` to `.env` in the project root. Its database settings are configured for the local Compose database.
 
 ```bash
 docker compose up --build
 ```
 
-On the first run Docker downloads the database image and builds the API image, so it can take a few minutes. The API applies database migrations and loads the development seed data when it starts. Keep this terminal open while using the app.
+On the first run Docker downloads the database image and builds the API image. The API applies database migrations and loads development sample data. Keep this terminal open.
 
-### 3. Install and start the web app
+### Start the web frontend
 
-Install Node.js LTS if it is not already installed. Open a second terminal in the project folder and run:
+Install Node.js LTS if needed. Open a second terminal in the project folder and run:
 
 ```bash
 cd client
@@ -48,71 +46,76 @@ npm install
 npm run dev
 ```
 
-`npm install` downloads the web app packages the first time. Leave this terminal open too, then open <http://localhost:5173> in a browser.
+Keep this terminal open and visit <http://localhost:5173>.
 
-### Useful local addresses
+Local addresses:
 
-- Web app: <http://localhost:5173>
+- Frontend: <http://localhost:5173>
 - API: <http://localhost:8000>
-- Interactive API docs: <http://localhost:8000/docs>
-- API health check: <http://localhost:8000/api/health>
+- API docs: <http://localhost:8000/docs>
+- API health: <http://localhost:8000/api/health>
 
-To stop the web app, press `Ctrl+C` in its terminal. To stop the API and database, press `Ctrl+C` in the Docker terminal. Start again later with the same commands; Docker keeps the database in a named volume.
+Press `Ctrl+C` in each terminal to stop its service. Docker stores the local database in a named volume, so it remains when the containers stop.
 
-## Publish a free demo website
+## Deploy or update the hosted website
 
-The included [`render.yaml`](render.yaml) describes a Render static site for the frontend and a Render Docker web service for the API. The database is hosted separately on Supabase because the app needs PostgreSQL with PostGIS. The free plans are suitable for a small demo, not a reliable production service: Render's free API sleeps when idle, and its free PostgreSQL database expires after 30 days. Supabase's free database can pause after inactivity and has a 500 MB database limit. Check the providers' current [Render free service limits](https://render.com/docs/free) and [Supabase pricing and limits](https://supabase.com/pricing) before relying on the site.
+The repository includes [`render.yaml`](render.yaml), a Render Blueprint for the static frontend and Docker API. Supabase hosts the PostgreSQL/PostGIS database.
 
-### 1. Put the code on GitHub
+### Supabase database
 
-Create a GitHub repository and push this project to it. Keep `.env` out of the repository; it contains private settings. Render will read `render.yaml` from the repository when you create a Blueprint.
+1. Create a Supabase project and keep its database password private.
+2. Enable the `postgis` extension under **Database → Extensions**.
+3. In the Supabase **Connect** panel, copy the **Session pooler** connection string (port `5432`).
+4. In Render's API service environment, set `DATABASE_URL` to that URI. Replace the prefix `postgresql://` with `postgresql+psycopg://`, and replace `[YOUR-PASSWORD]` with the actual password. Preserve the project reference, host, port, and database name from the copied URI. URL-encode special characters in the password.
 
-### 2. Create the hosted database
+For example, the value has this form:
 
-1. Create a Supabase project and save its database password somewhere private.
-2. In Supabase, open **Database → Extensions**, find `postgis`, and enable it. The app's migrations create the database tables and also request PostGIS, but enabling it in the dashboard first avoids permission surprises.
-3. Open **Connect** in the project dashboard and copy the **Session pooler** PostgreSQL connection string. Use the session pooler (not the transaction pooler) for this SQLAlchemy app.
-4. For Render's `DATABASE_URL`, change the beginning of the copied URL from `postgresql://` to `postgresql+psycopg://`. Keep the host, port, database, and password from Supabase. If the URL does not specify TLS, add `?sslmode=require` (or `&sslmode=require` if it already has query parameters). URL-encode special characters in the password.
+```text
+postgresql+psycopg://postgres.PROJECT_REF:ENCODED_PASSWORD@POOLER_HOST:5432/postgres?sslmode=require
+```
 
-The Python dependencies include Psycopg 3, which is why the `+psycopg` driver name matters.
+Do not copy this placeholder literally. Use the current URI shown by your Supabase project's **Connect** panel. The API's Psycopg 3 driver uses the `+psycopg` URL prefix.
 
-### 3. Create the Render services
+### Render settings
 
-1. Create a Render account and choose **New → Blueprint**. Connect the GitHub repository and deploy the Blueprint. It reads `render.yaml` and creates the API and static frontend services.
-2. When prompted, enter the Supabase connection string as `DATABASE_URL`. Render generates `JWT_SECRET_KEY` for you.
-3. Wait for both services to deploy. The API deployment applies database migrations. The API's health check is `https://ai-golf-caddie-api.onrender.com/api/health`.
-4. Open the static site's URL, normally `https://ai-golf-caddie-web.onrender.com`, and register an account.
+Connect the GitHub repository in Render and create or sync a Blueprint from `render.yaml`. Render provides the public service URLs. If Render assigns URLs with generated suffixes, use the actual URLs shown in the dashboard, not the unsuffixed examples in `render.yaml`.
 
-If Render assigns different service URLs, update `VITE_API_BASE_URL` on the static site to `<API URL>/api`, and update `CORS_ORIGINS` on the API to the exact frontend origin (scheme and hostname, with no trailing slash). Then redeploy both services so the frontend is rebuilt with the API URL and the backend accepts that site's requests.
+For the currently deployed services, the environment values are:
 
-### 4. Set optional integrations and protect secrets
+- In the **frontend static site → Environment**, set `VITE_API_BASE_URL` to `https://ai-golf-caddie-api-77sj.onrender.com/api`.
+- In the **API web service → Environment**, set `CORS_ORIGINS` to `https://ai-golf-caddie-web-77sj.onrender.com`.
+- In the **API web service → Environment**, set `DATABASE_URL` to the Supabase connection string described above. Render generates `JWT_SECRET_KEY` through the Blueprint.
 
-- `DATABASE_URL`, `JWT_SECRET_KEY`, `GOLF_API_KEY`, and `OPENAI_API_KEY` belong only in the API service's Render environment settings. Do not expose them as `VITE_` variables.
-- `VITE_MAPBOX_TOKEN` is included in the downloaded browser code by design. Use a public Mapbox token and restrict it to the deployed website's domain in Mapbox settings.
-- The demo does not need Golf API, Mapbox, or OpenAI keys to deploy, but features that depend on them will be limited without those keys.
+Enter only the value in Render's value field, without text like `VITE_API_BASE_URL=`. `VITE_API_BASE_URL` includes `/api`; `CORS_ORIGINS` is just the frontend origin, with no path and no trailing slash. After changing environment values, redeploy both services: the frontend URL is embedded at build time, and the API loads CORS/database settings at startup. Use **Manual Deploy → Deploy latest commit** in each service if it does not deploy automatically.
 
-To enable an integration, open the matching Render service's **Environment** settings and add `GOLF_API_KEY` or `OPENAI_API_KEY` to the API service, or `VITE_MAPBOX_TOKEN` to the static site. After changing a `VITE_` value, trigger a new static-site deploy so it is embedded in the browser build.
+Check deployment with:
 
-Free services may sleep, restart, pause, or have limited backups and storage. Supabase free projects that are paused may need to be resumed in its dashboard. Back up any user data you care about before changing plans or deleting the database.
+- Frontend: <https://ai-golf-caddie-web-77sj.onrender.com>
+- API health: <https://ai-golf-caddie-api-77sj.onrender.com/api/health>
 
-## Optional configuration
+If Render assigns different URLs in a future deployment, update these two environment values to match the new frontend and API origins, then redeploy.
 
-The app can start locally without configuring third-party API keys. Some features need their own configuration:
+## Environment variables and optional integrations
 
-- Course search/data from the Golf API requires `GOLF_API_KEY`.
-- Course maps require `VITE_MAPBOX_TOKEN`.
-- AI-written recommendation explanations can use `OPENAI_API_KEY`; without it, the app uses its built-in explanation.
-- Weather lookup uses Open-Meteo and needs an internet connection.
+`.env.example` is for local development. In Render, configure variables on the matching service instead of uploading or committing `.env`:
 
-For local customization, copy `.env.example` to `.env` in the project root. The example uses the local Compose database URL. Keep secrets private and do not commit `.env`. Vite reads frontend `VITE_` values from this root `.env` file; restart the web dev server after changing them.
+- API service: `DATABASE_URL`, `JWT_SECRET_KEY`, `CORS_ORIGINS`, optional `GOLF_API_KEY`, and optional `OPENAI_API_KEY`.
+- Frontend static site: `VITE_API_BASE_URL` and optional `VITE_MAPBOX_TOKEN`.
+- Native iOS app: `VITE_MOBILE_API_URL` is compiled into the app; rebuild/sync the app after changing it.
+
+Course search/data from the Golf API requires `GOLF_API_KEY`. Maps require a public Mapbox token in `VITE_MAPBOX_TOKEN`; restrict the token to the website's domain. AI-written recommendation explanations can use `OPENAI_API_KEY`; without it, the app uses its built-in explanation. Weather lookup uses Open-Meteo and needs internet access.
+
+Keep `DATABASE_URL`, `JWT_SECRET_KEY`, and provider API secrets private. Variables beginning with `VITE_` are included in the browser build and must not contain secrets.
 
 ## Troubleshooting
 
-- **`docker` is not recognized / command not found:** Install and start Docker Desktop, or install Docker Engine and the Compose plugin on Linux. Reopen the terminal after installation.
-- **`npm` is not recognized / command not found:** Install Node.js LTS, then reopen the terminal.
-- **Port 5173, 5432, or 8000 is already in use:** Stop the other program using that port, then retry.
-- **The browser cannot reach the API:** Check that the Docker terminal shows the backend started successfully and that <http://localhost:8000/api/health> loads.
-- **A mapped course or feature is missing:** The included course data is limited. Stonehenge Hole 1 is mapped; other holes are not synthesized. Some course data features also require a Golf API key.
+- **Registration or login shows “Unable to reach the server”:** This message is a generic frontend fallback and can mean a network, CORS, or API/database error. Confirm the frontend `VITE_API_BASE_URL` ends in `/api`, confirm API `CORS_ORIGINS` exactly matches the frontend origin, and redeploy both services. If it still fails, check the API logs at the time of the request for `POST /api/auth/register` or `/api/auth/token`.
+- **API health works but registration fails:** Health does not verify a registration database query. Check the API logs for the request error and verify that `DATABASE_URL` is the current Supabase session-pooler URI, with the correct password and database name.
+- **Phone says it cannot reach the server:** Open the hosted frontend in Safari. If using the installed iOS app, set `VITE_MOBILE_API_URL` to the hosted API URL plus `/api`, then rebuild and reinstall the app.
+- **`docker` or `npm` is not recognized:** Install Docker Desktop (or Docker Engine plus Compose) or Node.js LTS, then reopen the terminal.
+- **A course or feature is missing:** The included course dataset is limited. Stonehenge Hole 1 is mapped; other holes are not synthesized. Some course data features also require a Golf API key.
+
+Free hosting is suitable for a small demo, not a production service. Render's free API may sleep when idle, and Supabase free projects have usage limits and may pause after inactivity. Review [Render's current free-tier limits](https://render.com/docs/free) and [Supabase pricing and limits](https://supabase.com/pricing); back up user data you need to keep.
 
 ## Project structure
 
@@ -122,8 +125,8 @@ AI-Golf-Caddie/
 ├── server/              # FastAPI API and database migrations
 ├── database/            # PostgreSQL/PostGIS initialization and seed SQL
 ├── docker-compose.yml   # Local database and API
-├── .env.example         # Example environment settings
-└── package.json
+├── render.yaml          # Render deployment Blueprint
+└── .env.example         # Local environment example
 ```
 
 ## Tech stack
