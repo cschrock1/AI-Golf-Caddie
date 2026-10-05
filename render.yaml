@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: ai-golf-caddie-api
+    runtime: docker
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://ai-golf-caddie-web.onrender.com
+      - key: OPENAI_MODEL
+        value: gpt-6-astra
+
+  - type: web
+    name: ai-golf-caddie-web
+    runtime: static
+    rootDir: client
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://ai-golf-caddie-api.onrender.com/api
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

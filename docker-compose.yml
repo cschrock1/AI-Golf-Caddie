@@ -21,7 +21,7 @@ services:
       context: .
       dockerfile: server/Dockerfile
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://golf_user:change_me@db:5432/ai_golf_caddie}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://golf_user:change_me@db:5432/ai_golf_caddie}
       APP_ENV: ${APP_ENV:-development}
       GOLF_API_KEY: ${GOLF_API_KEY}
       GOLF_API_BASE_URL: ${GOLF_API_BASE_URL:-https://golfapi.io/api/v2.3}
