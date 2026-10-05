@@ -1,31 +1,36 @@
 # AI Golf Caddie
 
-AI Golf Caddie is a golf app for saving clubs and carry distances, exploring course data, logging shots, and getting club recommendations. It has a Vue web app, a FastAPI API, and a PostgreSQL database with PostGIS.
+AI Golf Caddie is a full-stack golf application for tracking clubs, logging shots, reviewing course data, and getting helpful club recommendations. The app includes a Vue frontend, a Python FastAPI backend, and PostgreSQL/PostGIS for the data layer.
 
-## Start the app on a new computer
+## What this app includes
 
-You do not need Python, PostgreSQL, or the app's JavaScript/Python packages installed ahead of time. The first setup needs an internet connection so Docker, Node.js, and the project dependencies can be downloaded.
+- User registration and login
+- Golfer profile and saved clubs with carry distances
+- Course and hole data with mapped locations where available
+- Shot logging during a round
+- Personalized club recommendations based on distance to the target and the golfer's bag
+- Current weather lookup for a mapped course hole
+- Optional AI explanation for a recommendation when an OpenAI key is configured
+- Mobile-friendly frontend with Capacitor support
 
-### What you need
+## Project structure
 
-- A Windows, macOS, or Linux computer with a supported 64-bit operating system. For a usable local development setup, allow roughly 8 GB of memory and several GB of free disk space for Docker images and packages.
-- An internet connection for the initial installs and downloads.
-- Docker Desktop on Windows or macOS (or Docker Engine with the Compose plugin on Linux).
-- Node.js LTS, which includes npm.
-
-If Docker Desktop asks to enable virtualization or install its system service, follow its setup prompts and restart the computer if requested. No Git installation is required if you download the project as a ZIP.
-
-### 1. Get the project files
-
-Download the project ZIP from its repository page and extract it. Open a terminal (PowerShell on Windows, Terminal on macOS/Linux) and change to the extracted `AI-Golf-Caddie` folder. For example:
-
-```bash
-cd path/to/AI-Golf-Caddie
+```text
+ai-golf-caddie/
+├── client/              # Vue 3 frontend
+├── server/              # FastAPI backend
+├── database/            # PostgreSQL/PostGIS setup
+├── docker-compose.yml   # Local database and backend stack
+├── .env.example         # Example local environment file
+├── README.md
+└── package.json
 ```
 
-### 2. Start the database and API
+## Quick start
 
-Make sure Docker is running, then run this from the project folder:
+1. Copy `.env.example` then create and paste into `.env` file.
+2. Update the environment values for your local setup.
+3. Start the app:
 
 ```bash
 docker compose up --build
