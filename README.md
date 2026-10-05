@@ -28,7 +28,7 @@ ai-golf-caddie/
 
 ## Quick start
 
-1. Copy `.env.example` to `.env`.
+1. Copy `.env.example` then create and paste into `.env` file.
 2. Update the environment values for your local setup.
 3. Start the app:
 
