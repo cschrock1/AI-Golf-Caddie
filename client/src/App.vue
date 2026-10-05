@@ -11,5 +11,5 @@ import { useRoute } from 'vue-router'
 import BottomNav from './components/BottomNav.vue'
 
 const route = useRoute()
-const showBottomNav = computed(() => !['/login', '/register'].includes(route.path))
+const showBottomNav = computed(() => !['/login', '/register', '/hole'].includes(route.path))
 </script>

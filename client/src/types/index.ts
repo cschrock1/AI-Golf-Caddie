@@ -83,6 +83,14 @@ export interface Shot {
   result?: string | null
 }
 
+export interface RoundScore {
+  id: number
+  round_id: number
+  hole_id: number
+  hole_number: number
+  strokes: number
+}
+
 export interface Conditions {
   windSpeed?: number | null
   windDirectionDegrees?: number | null

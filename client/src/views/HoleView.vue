@@ -1,210 +1,195 @@
 <template>
-  <div class="pb-28 pt-4 sm:pt-6">
-    <AppHeader :course-name="courseName" :hole-label="`Hole ${holeNumber}`" compact />
-
-    <div v-if="isLoading" class="mt-5 space-y-5" aria-live="polite" aria-label="Loading golf data">
-      <div class="h-40 animate-pulse rounded-[28px] border border-[#1d3a2d] bg-[#0d2119]"></div>
-      <div class="h-64 animate-pulse rounded-[28px] border border-[#1d3a2d] bg-[#10271f]"></div>
+  <main v-if="isLoading" class="fixed inset-0 z-50 grid place-items-center bg-[#07100c] px-6" aria-live="polite" aria-label="Loading golf data">
+    <div class="w-full max-w-sm space-y-3">
+      <div class="h-16 animate-pulse rounded-2xl bg-white/10"></div>
+      <div class="h-72 animate-pulse rounded-3xl bg-white/5"></div>
     </div>
+  </main>
 
-    <div v-else-if="error" class="mt-5 rounded-[28px] border border-[#5a2f33] bg-[#1c191b] p-5" role="alert">
-      <p class="text-[10px] uppercase tracking-[0.24em] text-[#f1b2b9]">Golf data unavailable</p>
-      <p class="mt-2 text-sm leading-6 text-[#f7dfe2]">{{ error }}</p>
-      <button type="button" class="mt-4 rounded-full bg-[#c8ff00] px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-[#07140f]" @click="loadHoleData">Retry</button>
-    </div>
-
-    <template v-else>
-    <div v-if="!hole" class="mx-auto mt-4 max-w-6xl px-4 sm:px-6">
-      <div class="rounded-2xl border border-[#6b5632] bg-[#201c13] p-4 text-sm leading-6 text-[#f0d9a8]" role="status">
-        <template v-if="holes.length">Hole {{ holeNumber }} is not mapped for {{ courseName }} yet. Only mapped holes are available for play.</template>
-        <template v-else>No holes are mapped for {{ courseName }} yet. The course can be selected after its hole data is imported.</template>
-        <button v-if="holes.length" type="button" class="ml-2 rounded-full bg-[#c8ff00] px-3 py-1.5 text-xs font-bold text-[#07140f]" @click="selectHole(holes[0].hole_number)">Go to mapped Hole {{ holes[0].hole_number }}</button>
+  <main v-else-if="error" class="fixed inset-0 z-50 grid place-items-center bg-[#07100c] p-6" role="alert">
+    <section class="max-w-md rounded-3xl border border-white/10 bg-[#111a15] p-6 text-white">
+      <p class="text-xs font-bold uppercase tracking-[0.2em] text-[#c8ff00]">Golf data unavailable</p>
+      <p class="mt-3 text-sm leading-6 text-white/75">{{ error }}</p>
+      <div class="mt-5 flex gap-2">
+        <button type="button" class="rounded-xl bg-[#c8ff00] px-4 py-3 text-sm font-bold text-[#07140f]" @click="loadHoleData">Retry</button>
+        <button type="button" class="rounded-xl border border-white/15 px-4 py-3 text-sm font-semibold" @click="router.push('/dashboard')">Back</button>
       </div>
-    </div>
-    <template v-else>
-    <section class="relative mt-4 overflow-hidden border-y border-[#214335] bg-[#10271f] sm:mt-6">
-      <CourseMap :hole="hole" :course="course" :target="recommendation?.target_location ?? null" :full-screen="true" />
+    </section>
+  </main>
 
-      <div class="pointer-events-none absolute inset-x-3 top-3 z-20 flex items-start justify-between gap-2 sm:inset-x-5 sm:top-5">
-        <div class="pointer-events-auto rounded-[22px] border border-white/15 bg-[#101914]/90 px-4 py-3 text-white shadow-xl backdrop-blur-md">
-          <p class="max-w-[42vw] truncate text-[9px] font-bold uppercase tracking-[0.2em] text-[#b8d8c8]">{{ courseName }}</p>
-          <div class="mt-1 flex items-end gap-3">
-            <p class="text-4xl font-black leading-none">{{ holeNumber }}</p>
-            <div class="pb-0.5 text-xs text-white/75">
-              <span class="font-bold text-white">Par {{ par }}</span>
-              <span class="mx-1.5 text-white/35">·</span>
-              {{ pinDistance }} YDS
+  <main v-else-if="!hole" class="fixed inset-0 z-50 grid place-items-center bg-[#07100c] p-5 text-white">
+    <section class="max-w-md rounded-3xl border border-[#6b5632] bg-[#201c13] p-6 text-center">
+      <p class="text-xs font-bold uppercase tracking-[0.2em] text-[#f0d9a8]">Hole not mapped yet</p>
+      <h1 class="mt-3 text-2xl font-black">{{ courseName }}</h1>
+      <p class="mt-2 text-sm leading-6 text-white/70">Only mapped holes are available for play. This course currently has {{ holes.length }} mapped {{ holes.length === 1 ? 'hole' : 'holes' }}.</p>
+      <button v-if="holes.length" type="button" class="mt-5 rounded-xl bg-[#c8ff00] px-5 py-3 text-sm font-bold text-[#07140f]" @click="selectHole(holes[0].hole_number)">Open mapped Hole {{ holes[0].hole_number }}</button>
+      <button type="button" class="ml-2 mt-5 rounded-xl border border-white/15 px-5 py-3 text-sm font-semibold" @click="router.push('/dashboard')">Back</button>
+    </section>
+  </main>
+
+  <main v-else class="fixed inset-0 z-30 overflow-hidden bg-[#101914] text-white">
+    <CourseMap :hole="hole" :course="course" :target="recommendation?.target_location ?? null" :full-screen="true" />
+
+    <header class="pointer-events-none absolute inset-x-3 top-3 z-20 flex items-start gap-2 sm:inset-x-5 sm:top-5">
+      <button type="button" class="pointer-events-auto grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#111512]/95 text-3xl shadow-xl backdrop-blur" aria-label="Back to dashboard" @click="router.push('/dashboard')">‹</button>
+
+      <section class="pointer-events-auto min-w-0 flex-1 overflow-hidden rounded-[22px] bg-[#151a18]/95 shadow-xl backdrop-blur-md">
+        <p class="truncate px-4 pt-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/55">{{ courseName }}</p>
+        <div class="flex items-center">
+          <div class="flex min-w-[112px] items-center gap-3 rounded-[20px] bg-[#111312] px-4 py-2.5">
+            <span class="text-4xl font-black leading-none">{{ holeNumber }}</span>
+            <div class="min-w-0">
+              <p class="truncate text-xs font-semibold text-white/65">Mapped tee</p>
+              <p class="whitespace-nowrap text-lg font-bold leading-tight">{{ pinDistance || '—' }}<span class="ml-1 text-xs font-semibold">yds</span></p>
+            </div>
+          </div>
+          <div class="flex flex-1 items-center justify-around px-1 py-2 text-center">
+            <div>
+              <p class="text-[10px] text-white/55">Par</p>
+              <p class="text-2xl font-bold">{{ par || '—' }}</p>
+            </div>
+            <div class="hidden min-[420px]:block">
+              <p class="text-[10px] text-white/55">Score</p>
+              <p class="text-2xl font-bold">{{ holeScore ?? '—' }}</p>
+            </div>
+            <div class="flex flex-col gap-1">
+              <button type="button" class="grid h-7 w-7 place-items-center rounded-full bg-white/10 text-lg disabled:opacity-30" aria-label="Previous mapped hole" :disabled="holeIndex <= 0" @click="selectHole(holes[holeIndex - 1]?.hole_number)">‹</button>
+              <button type="button" class="grid h-7 w-7 place-items-center rounded-full bg-white/10 text-lg disabled:opacity-30" aria-label="Next mapped hole" :disabled="holeIndex < 0 || holeIndex >= holes.length - 1" @click="selectHole(holes[holeIndex + 1]?.hole_number)">›</button>
             </div>
           </div>
         </div>
-        <div class="pointer-events-auto flex gap-2">
-          <button type="button" class="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-[#101914]/90 text-2xl text-white shadow-xl backdrop-blur-md disabled:opacity-40" aria-label="Previous mapped hole" :disabled="holeIndex <= 0" @click="selectHole(holes[holeIndex - 1]?.hole_number)">‹</button>
-          <button type="button" class="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-[#101914]/90 text-2xl text-white shadow-xl backdrop-blur-md disabled:opacity-40" aria-label="Next mapped hole" :disabled="holeIndex < 0 || holeIndex >= holes.length - 1" @click="selectHole(holes[holeIndex + 1]?.hole_number)">›</button>
+      </section>
+    </header>
+
+    <div class="absolute left-3 top-[38%] z-20 rounded-[28px] bg-white text-[#161817] shadow-xl sm:left-6">
+      <div class="flex items-center gap-3 pr-4">
+        <div class="grid min-h-[82px] min-w-[82px] place-items-center rounded-full bg-[#151817] px-3 text-center text-white">
+          <span class="text-3xl font-black leading-none">{{ liveDistance ?? pinDistance ?? '—' }}<span class="ml-0.5 text-xs">y</span></span>
+        </div>
+        <div class="py-2">
+          <p class="text-xs text-[#666]">{{ liveDistance != null ? 'To pin' : 'Tee to pin' }}</p>
+          <p class="text-xl font-bold leading-tight">{{ liveDistance != null ? 'GPS distance' : 'Hole yardage' }}</p>
         </div>
       </div>
-
-      <div class="absolute inset-x-3 bottom-20 z-20 sm:inset-x-5">
-        <div class="flex items-center gap-2 overflow-x-auto rounded-2xl border border-white/15 bg-[#101914]/90 p-2 shadow-xl backdrop-blur-md" aria-label="Select hole">
-          <button
-            v-for="courseHole in holes"
-            :key="courseHole.hole_number"
-            type="button"
-            class="h-9 min-w-9 rounded-xl px-2 text-xs font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c8ff00]"
-            :class="courseHole.hole_number === holeNumber ? 'bg-[#c8ff00] text-[#07140f]' : 'text-white/80 hover:bg-white/10'"
-            :aria-label="`Select hole ${courseHole.hole_number}`"
-            :aria-pressed="courseHole.hole_number === holeNumber"
-            @click="selectHole(courseHole.hole_number)"
-          >
-            {{ courseHole.hole_number }}
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <div class="mx-auto max-w-6xl px-4 sm:px-6">
-    <section class="mt-5 rounded-[28px] border border-[#1d3a2d] bg-[#0d2119] p-4 shadow-[0_16px_32px_rgba(2,10,7,0.18)] sm:p-5">
-      <div class="flex items-end justify-between gap-4">
-        <div>
-          <p class="text-[10px] uppercase tracking-[0.24em] text-[#8ca49a]">Hole summary</p>
-          <h1 class="mt-1 text-2xl font-black tracking-tight text-white">Hole {{ holeNumber }}</h1>
-        </div>
-        <div class="flex gap-4 text-right">
-          <div>
-            <p class="text-[9px] uppercase tracking-[0.2em] text-[#8ca49a]">Par</p>
-            <p class="mt-1 text-lg font-black text-white">{{ par }}</p>
-          </div>
-          <div>
-            <p class="text-[9px] uppercase tracking-[0.2em] text-[#8ca49a]">HCP</p>
-            <p class="mt-1 text-lg font-black text-white">{{ handicap }}</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="mt-5 rounded-2xl border border-white/10 bg-[#10271f] p-4">
-        <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-[#91a69a]">Hole yardage</p>
-        <p class="mt-1 text-3xl font-black tracking-tight text-white">{{ pinDistance }} <span class="text-xs font-bold text-[#91a69a]">YDS</span></p>
-      </div>
-      <p class="mt-3 text-[10px] uppercase tracking-[0.16em] text-[#789084]">Preferred tee: {{ tee }} · GPS distance updates when you locate yourself on the map.</p>
-    </section>
-
-    <section class="mt-5 rounded-[26px] border border-white/10 bg-[#0d1d16] p-4 sm:p-5">
-      <div class="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-[#c8ff00]">Shot log · Hole {{ holeNumber }}</p>
-          <p class="mt-1 text-sm text-[#a6b6ad]">Record the club and result after each shot.</p>
-        </div>
-        <p class="text-xs text-[#91a69a]">{{ holeShots.length }} {{ holeShots.length === 1 ? 'shot' : 'shots' }} logged</p>
-      </div>
-      <form class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" @submit.prevent="recordShot">
-        <label class="text-xs font-semibold text-[#a6b6ad]">Club
-          <select v-model.number="shotClubId" required class="mt-1.5 w-full rounded-xl border border-white/10 bg-[#07150f] px-3 py-3 text-sm text-white focus:border-[#c8ff00]">
-            <option :value="null" disabled>Select club</option>
-            <option v-for="club in bagOptions" :key="club.id" :value="club.id">{{ club.name }}</option>
-          </select>
-        </label>
-        <label class="text-xs font-semibold text-[#a6b6ad]">Distance to target after shot (yd)
-          <input v-model.number="endDistance" type="number" min="0" placeholder="Optional" class="mt-1.5 w-full rounded-xl border border-white/10 bg-[#07150f] px-3 py-3 text-sm text-white placeholder:text-[#71867a] focus:border-[#c8ff00]" />
-        </label>
-        <label class="text-xs font-semibold text-[#a6b6ad]">Result
-          <select v-model="shotResult" class="mt-1.5 w-full rounded-xl border border-white/10 bg-[#07150f] px-3 py-3 text-sm text-white focus:border-[#c8ff00]">
-            <option value="">Choose result</option>
-            <option value="fairway">Fairway</option>
-            <option value="green">Green</option>
-            <option value="bunker">Bunker</option>
-            <option value="water">Water</option>
-            <option value="rough">Rough</option>
-            <option value="other">Other</option>
-          </select>
-        </label>
-        <button type="submit" :disabled="!canRecordShot || savingShot" class="self-end rounded-xl bg-[#c8ff00] px-4 py-3 text-xs font-black uppercase tracking-[0.12em] text-[#07140f] disabled:cursor-not-allowed disabled:opacity-40">{{ savingShot ? 'Saving…' : 'Log shot' }}</button>
-      </form>
-      <p v-if="shotError" class="mt-3 text-sm text-[#ffaaa9]" role="alert">{{ shotError }}</p>
-      <p v-if="!bagOptions.length" class="mt-3 text-sm text-[#f0d9a8]">Add clubs to your bag before logging a shot.</p>
-      <div v-if="holeShots.length" class="mt-4 divide-y divide-white/10 rounded-2xl border border-white/10 px-3">
-        <div v-for="(shot, index) in holeShots" :key="shot.id" class="flex items-center justify-between gap-3 py-3 text-sm">
-          <span class="font-semibold text-white">Shot {{ index + 1 }} · {{ clubName(shot.club_id) }}</span>
-          <span class="text-right text-[#a6b6ad]">{{ shot.result || 'Result not set' }}<span v-if="shot.end_distance != null"> · {{ shot.end_distance }} yd remaining</span></span>
-        </div>
-      </div>
-    </section>
-
-    <div class="mt-5 grid gap-5 lg:grid-cols-2 lg:items-start">
-      <ConditionsCard
-        :weather="currentWeather"
-        :loading="weatherLoading"
-        :error="weatherError"
-      />
-
-      <RecommendationCard
-        :recommendation="recommendation"
-        :loading="recommendationLoading"
-        :error="recommendationError"
-        @select-club="selectRecommendedClub"
-      />
     </div>
 
-    <section class="mt-5 rounded-[26px] border border-[#1d3a2d] bg-[#10271f] p-4 sm:p-5">
-      <div class="flex items-center justify-between">
-        <p class="text-[10px] uppercase tracking-[0.24em] text-[#8ca49a]">Secondary actions</p>
-        <span class="text-[9px] uppercase tracking-[0.18em] text-[#6f8e80]">Round tools</span>
-      </div>
-      <div class="mt-3 grid grid-cols-3 gap-2">
-        <button type="button" class="rounded-2xl border border-[#214335] bg-[#0d2119] px-2 py-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[#dfeee6] transition hover:border-[#668579] focus-visible:outline-none" @click="showBag = true">Bag select</button>
-        <button type="button" class="rounded-2xl border border-[#214335] bg-[#0d2119] px-2 py-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[#dfeee6] transition hover:border-[#668579] focus-visible:outline-none" @click="showDispersion = !showDispersion">Dispersion</button>
-        <button type="button" class="rounded-2xl bg-[#c8ff00] px-2 py-3 text-[10px] font-black uppercase tracking-[0.12em] text-[#07140f] transition hover:brightness-110 focus-visible:outline-none" @click="router.push('/caddie')">Ask caddie</button>
-      </div>
-      <div v-if="showDispersion" class="mt-3 rounded-2xl border border-[#214335] bg-[#0b1d17] p-3 text-sm leading-6 text-[#dfeee6]" role="status">
-        Dispersion will show your typical left and right miss pattern here once shot history is connected.
-      </div>
-    </section>
-    </div>
-    </template>
-    </template>
+    <aside class="absolute right-3 top-[42%] z-20 w-[94px] rounded-[24px] bg-[#151817]/95 px-3 py-3 text-center shadow-xl backdrop-blur sm:right-6" aria-label="Current wind conditions">
+      <div class="flex items-center justify-center gap-1 text-sm font-semibold">Wind <span class="grid h-5 w-5 place-items-center rounded-full bg-[#2588ef] text-xs">›</span></div>
+      <p class="my-2 text-4xl leading-none" :style="{ transform: `rotate(${windArrowRotation}deg)` }" aria-hidden="true">↑</p>
+      <p class="text-lg font-bold leading-tight">{{ currentWeather?.windSpeed ?? '—' }}<span class="ml-1 text-xs font-medium">mph</span></p>
+      <p class="mt-1 truncate text-[9px] uppercase tracking-wide text-white/55">{{ weatherLoading ? 'Updating' : windDirectionLabel }}</p>
+      <p v-if="weatherError && !weatherLoading" class="mt-1 text-[9px] leading-tight text-white/45">Unavailable</p>
+    </aside>
 
-    <div v-if="showBag" class="fixed inset-0 z-50 flex items-end justify-center bg-[#020806]/75 p-3 sm:items-center" @click.self="showBag = false">
-      <section class="w-full max-w-md rounded-[28px] border border-[#315441] bg-[#10271f] p-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="bag-title">
-        <div class="flex items-center justify-between gap-4">
-          <div>
-            <p class="text-[10px] uppercase tracking-[0.24em] text-[#8ca49a]">Club selection</p>
-            <h2 id="bag-title" class="mt-1 text-xl font-black text-white">Choose from your bag</h2>
-          </div>
-          <button type="button" class="rounded-full border border-[#315441] px-3 py-2 text-xs text-[#dfeee6] focus-visible:outline-none" aria-label="Close club selection" @click="showBag = false">Close</button>
+    <footer class="pointer-events-none absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-20 flex flex-col gap-2 sm:inset-x-auto sm:right-8 sm:w-[min(560px,calc(100%-4rem))] sm:left-1/2 sm:-translate-x-1/2">
+      <button type="button" class="pointer-events-auto flex h-[68px] items-center justify-center gap-4 rounded-[20px] bg-[#171a19]/95 px-5 text-lg font-bold shadow-xl backdrop-blur transition active:scale-[0.99]" @click="showShotDialog = true">
+        <span class="grid h-12 w-12 place-items-center rounded-2xl bg-[#101211] text-2xl" aria-hidden="true">⌖</span>
+        <span>Track shot</span>
+        <span class="text-xs font-medium text-white/55">{{ holeShots.length ? `${holeShots.length} logged` : 'Add shot' }}</span>
+      </button>
+
+      <nav class="pointer-events-auto grid grid-cols-[74px_42px_1fr_42px_74px] items-stretch gap-1.5">
+        <button type="button" class="flex min-h-[74px] flex-col items-center justify-center rounded-[18px] bg-[#171a19]/95 text-[11px] font-semibold shadow-xl" @click="router.push('/scorecard')">Scorecard<span class="mt-1 text-[#2588ef]">●</span></button>
+        <button type="button" class="rounded-[18px] bg-[#171a19]/95 text-3xl disabled:opacity-30" aria-label="Previous mapped hole" :disabled="holeIndex <= 0" @click="selectHole(holes[holeIndex - 1]?.hole_number)">‹</button>
+        <button type="button" class="rounded-[18px] bg-[#2588ef] px-2 py-2 text-center shadow-xl" aria-label="Enter score for this hole" @click="openScoreDialog">
+          <span class="block text-xl font-black">Hole {{ holeNumber }}</span>
+          <span class="block text-sm">{{ holeScore != null ? `Score ${holeScore}` : 'Enter score' }}</span>
+        </button>
+        <button type="button" class="rounded-[18px] bg-[#171a19]/95 text-3xl disabled:opacity-30" aria-label="Next mapped hole" :disabled="holeIndex < 0 || holeIndex >= holes.length - 1" @click="selectHole(holes[holeIndex + 1]?.hole_number)">›</button>
+        <button type="button" class="flex min-h-[74px] flex-col items-center justify-center rounded-[18px] bg-[#171a19]/95 text-[11px] font-semibold shadow-xl" @click="showTools = true">Tools<span class="mt-1 text-[#2588ef]">●</span></button>
+      </nav>
+    </footer>
+
+    <div v-if="showShotDialog" class="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-3 sm:items-center" @click.self="showShotDialog = false">
+      <section class="w-full max-w-md rounded-[28px] border border-white/10 bg-[#111a15] p-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="shot-dialog-title">
+        <div class="flex items-start justify-between gap-4">
+          <div><p class="text-[10px] font-bold uppercase tracking-[0.2em] text-[#9cad9f]">Hole {{ holeNumber }} · Shot {{ holeShots.length + 1 }}</p><h2 id="shot-dialog-title" class="mt-1 text-2xl font-black">Track shot</h2></div>
+          <button type="button" class="rounded-full border border-white/15 px-3 py-2 text-sm" @click="showShotDialog = false">Close</button>
         </div>
-        <div class="mt-4 space-y-2">
-          <button v-for="club in bagOptions" :key="club.name" type="button" class="flex w-full items-center justify-between rounded-2xl border border-[#214335] bg-[#0d2119] p-3 text-left transition hover:border-[#c8ff00] focus-visible:outline-none" @click="selectBagClub(club)">
-            <span class="font-bold text-white">{{ club.name }}</span>
-            <span class="text-xs uppercase tracking-[0.14em] text-[#8ca49a]">{{ club.carry_distance ?? club.total_distance ?? '—' }} YDS</span>
-          </button>
+        <form class="mt-5 space-y-3" @submit.prevent="recordShot">
+          <label class="block text-xs font-semibold text-white/65">Club
+            <select v-model.number="shotClubId" required class="mt-1.5 w-full rounded-xl border border-white/10 bg-[#07100c] px-3 py-3 text-sm text-white">
+              <option :value="null" disabled>Select club</option>
+              <option v-for="club in bagOptions" :key="club.id" :value="club.id">{{ club.name }}{{ club.carry_distance ? ` · ${club.carry_distance} yd` : '' }}</option>
+            </select>
+          </label>
+          <label class="block text-xs font-semibold text-white/65">Distance remaining (yards)
+            <input v-model.number="endDistance" type="number" min="0" placeholder="Optional" class="mt-1.5 w-full rounded-xl border border-white/10 bg-[#07100c] px-3 py-3 text-sm text-white placeholder:text-white/35" />
+          </label>
+          <label class="block text-xs font-semibold text-white/65">Lie / result
+            <select v-model="shotResult" class="mt-1.5 w-full rounded-xl border border-white/10 bg-[#07100c] px-3 py-3 text-sm text-white">
+              <option value="">Choose result</option><option value="fairway">Fairway</option><option value="green">Green</option><option value="bunker">Bunker</option><option value="water">Water</option><option value="rough">Rough</option><option value="other">Other</option>
+            </select>
+          </label>
+          <p v-if="shotError" class="text-sm text-[#ffaaa9]" role="alert">{{ shotError }}</p>
+          <p v-if="!bagOptions.length" class="text-sm text-[#f0d9a8]">Add clubs to your bag before logging a shot.</p>
+          <button type="submit" :disabled="!canRecordShot || savingShot" class="w-full rounded-xl bg-[#c8ff00] px-4 py-3.5 text-sm font-black uppercase tracking-wide text-[#07140f] disabled:opacity-40">{{ savingShot ? 'Saving…' : 'Save shot' }}</button>
+        </form>
+        <div v-if="holeShots.length" class="mt-4 max-h-32 divide-y divide-white/10 overflow-y-auto rounded-xl border border-white/10 px-3">
+          <div v-for="(shot, index) in holeShots" :key="shot.id" class="flex justify-between gap-3 py-2 text-xs"><span>Shot {{ index + 1 }} · {{ clubName(shot.club_id) }}</span><span class="text-white/55">{{ shot.result || 'Result not set' }}<span v-if="shot.end_distance != null"> · {{ shot.end_distance }} yd</span></span></div>
         </div>
-        <p v-if="bagMessage" class="mt-3 text-xs text-[#b8d8c8]" role="status">{{ bagMessage }}</p>
       </section>
     </div>
-  </div>
+
+    <div v-if="showScoreDialog" class="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-3 sm:items-center" @click.self="showScoreDialog = false">
+      <section class="w-full max-w-sm rounded-[28px] border border-white/10 bg-[#111a15] p-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="score-dialog-title">
+        <div class="flex items-start justify-between"><div><p class="text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">{{ courseName }}</p><h2 id="score-dialog-title" class="mt-1 text-2xl font-black">Hole {{ holeNumber }} score</h2></div><button type="button" class="rounded-full border border-white/15 px-3 py-2 text-sm" @click="showScoreDialog = false">Close</button></div>
+        <p class="mt-1 text-sm text-white/55">Par {{ par }}</p>
+        <div class="mt-5 flex items-center justify-center gap-8">
+          <button type="button" class="grid h-12 w-12 place-items-center rounded-full bg-white/10 text-3xl" aria-label="Subtract one stroke" @click="scoreEntry = Math.max(1, scoreEntry - 1)">−</button>
+          <div class="min-w-20 text-center"><p class="text-5xl font-black">{{ scoreEntry }}</p><p class="mt-1 text-[10px] uppercase tracking-widest text-white/50">Strokes</p></div>
+          <button type="button" class="grid h-12 w-12 place-items-center rounded-full bg-white/10 text-3xl" aria-label="Add one stroke" @click="scoreEntry = Math.min(20, scoreEntry + 1)">+</button>
+        </div>
+        <p v-if="scoreError" class="mt-3 text-center text-sm text-[#ffaaa9]" role="alert">{{ scoreError }}</p>
+        <button type="button" :disabled="savingScore" class="mt-5 w-full rounded-xl bg-[#2588ef] px-4 py-3.5 text-sm font-black uppercase tracking-wide disabled:opacity-40" @click="saveScore">{{ savingScore ? 'Saving…' : 'Save score' }}</button>
+      </section>
+    </div>
+
+    <div v-if="showTools" class="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-3 sm:items-center" @click.self="showTools = false">
+      <section class="w-full max-w-sm rounded-[28px] border border-white/10 bg-[#111a15] p-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="tools-title">
+        <div class="flex items-center justify-between"><h2 id="tools-title" class="text-xl font-black">Round tools</h2><button type="button" class="rounded-full border border-white/15 px-3 py-2 text-sm" @click="showTools = false">Close</button></div>
+        <div class="mt-4 grid grid-cols-2 gap-2">
+          <button type="button" class="rounded-xl border border-white/10 bg-white/5 p-4 text-left font-semibold" @click="showTools = false; showBag = true">Choose club<span class="mt-1 block text-xs font-normal text-white/50">{{ shotClubId ? clubName(shotClubId) : 'Open your bag' }}</span></button>
+          <button type="button" class="rounded-xl border border-white/10 bg-white/5 p-4 text-left font-semibold" @click="showTools = false; router.push('/caddie')">Ask caddie<span class="mt-1 block text-xs font-normal text-white/50">Shot recommendation</span></button>
+          <button type="button" class="rounded-xl border border-white/10 bg-white/5 p-4 text-left font-semibold" @click="showTools = false; router.push('/profile')">Profile & bag<span class="mt-1 block text-xs font-normal text-white/50">Edit golfer data</span></button>
+          <button type="button" class="rounded-xl border border-white/10 bg-white/5 p-4 text-left font-semibold" @click="showTools = false; router.push('/scorecard')">Scorecard<span class="mt-1 block text-xs font-normal text-white/50">Round totals</span></button>
+        </div>
+      </section>
+    </div>
+
+    <div v-if="showBag" class="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 p-3 sm:items-center" @click.self="showBag = false">
+      <section class="w-full max-w-md rounded-[28px] border border-white/10 bg-[#111a15] p-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="bag-title">
+        <div class="flex items-center justify-between gap-4"><div><p class="text-[10px] uppercase tracking-[0.2em] text-white/55">Club selection</p><h2 id="bag-title" class="mt-1 text-xl font-black">Choose from your bag</h2></div><button type="button" class="rounded-full border border-white/15 px-3 py-2 text-sm" @click="showBag = false">Close</button></div>
+        <div class="mt-4 max-h-[55svh] space-y-2 overflow-y-auto">
+          <button v-for="club in bagOptions" :key="club.name" type="button" class="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-3 text-left" @click="selectBagClub(club)"><span class="font-bold">{{ club.name }}</span><span class="text-xs text-white/55">{{ club.carry_distance ?? club.total_distance ?? '—' }} yd</span></button>
+        </div>
+        <p v-if="bagMessage" class="mt-3 text-xs text-[#c8ff00]" role="status">{{ bagMessage }}</p>
+      </section>
+    </div>
+  </main>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import AppHeader from '../components/AppHeader.vue'
-import RecommendationCard from '../components/RecommendationCard.vue'
-import ConditionsCard from '../components/ConditionsCard.vue'
 import CourseMap from '../components/CourseMap.vue'
 import { roundStore } from '../stores/round'
 import { authStore } from '../stores/auth'
-import { createRound, createShot, getClubs, getCourses, getCourseHoles, getCurrentWeather, getGolferProfile, getHole, getRecommendation, getRounds, getShots } from '../services/api'
-import type { Club, Course, Conditions, GolferProfile, Hole, Recommendation, Shot } from '../types'
+import { createRound, createShot, getClubs, getCourses, getCourseHoles, getCurrentWeather, getHole, getRecommendation, getRoundScores, getRounds, getShots, saveRoundScores } from '../services/api'
+import type { Club, Course, Conditions, Hole, Recommendation, RoundScore, Shot } from '../types'
 
 const router = useRouter()
 const route = useRoute()
-const showDispersion = ref(false)
 const showBag = ref(false)
+const showTools = ref(false)
+const showShotDialog = ref(false)
+const showScoreDialog = ref(false)
 const bagMessage = ref('')
 const isLoading = ref(true)
 const error = ref('')
 const course = ref<Course | null>(null)
 const hole = ref<Hole | null>(null)
 const holes = ref<Hole[]>([])
-const profile = ref<GolferProfile | null>(null)
 const bagOptions = ref<Club[]>([])
 const currentWeather = ref<Conditions | null>(null)
 const weatherLoading = ref(false)
@@ -213,6 +198,10 @@ const recommendation = ref<Recommendation | null>(null)
 const recommendationLoading = ref(false)
 const recommendationError = ref('')
 const holeShots = ref<Shot[]>([])
+const holeScore = ref<number | null>(null)
+const scoreEntry = ref(4)
+const scoreError = ref('')
+const savingScore = ref(false)
 const shotClubId = ref<number | null>(null)
 const endDistance = ref<number | null>(null)
 const shotResult = ref('')
@@ -231,11 +220,16 @@ const holeNumber = computed(() => {
 const holeIndex = computed(() => holes.value.findIndex((item) => item.hole_number === holeNumber.value))
 const courseName = computed(() => course.value?.name || 'Golf course')
 const par = computed(() => hole.value?.par ?? 0)
-const handicap = computed(() => profile.value?.handicap ?? '—')
-const tee = computed(() => profile.value?.preferred_tee || '—')
 const pinDistance = computed(() => hole.value?.yardage ?? 0)
 
 const conditions = roundStore.conditions
+const liveDistance = computed(() => conditions.value.holeDistance ?? null)
+const windDirectionLabel = computed(() => {
+  const degrees = currentWeather.value?.windDirectionDegrees
+  if (degrees == null) return 'Direction unavailable'
+  return `From ${['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(degrees / 45) % 8]}`
+})
+const windArrowRotation = computed(() => currentWeather.value?.windDirectionDegrees ?? 0)
 const canRecordShot = computed(() => Boolean(roundId.value && hole.value?.id && shotClubId.value))
 const clubName = (clubId: number) => bagOptions.value.find((club) => club.id === clubId)?.name || 'Club'
 
@@ -311,15 +305,6 @@ async function loadHoleData() {
   }
 }
 
-async function loadProfile(userId: number) {
-  try {
-    const response = await getGolferProfile(userId)
-    profile.value = response.data
-  } catch {
-    profile.value = null
-  }
-}
-
 function loadBagOptions(userId: number) {
   getClubs(userId).then((response) => {
     bagOptions.value = response.data
@@ -330,7 +315,6 @@ function loadBagOptions(userId: number) {
 watch(() => authStore.user.value?.id, (userId) => {
   if (userId) {
     loadBagOptions(userId)
-    loadProfile(userId)
   }
 }, { immediate: true })
 
@@ -394,12 +378,47 @@ async function loadRecommendation() {
 }
 
 async function loadHoleShots() {
-  if (!roundId.value || !hole.value?.id) return
+  if (!roundId.value || !hole.value?.id) {
+    holeShots.value = []
+    holeScore.value = null
+    return
+  }
   try {
     const response = await getShots(roundId.value)
     holeShots.value = response.data.filter((shot) => shot.hole_id === hole.value?.id)
   } catch {
     holeShots.value = []
+  }
+  try {
+    const scores = await getRoundScores(roundId.value)
+    holeScore.value = scores.data.find((score: RoundScore) => score.hole_id === hole.value?.id)?.strokes ?? null
+  } catch {
+    holeScore.value = null
+  }
+}
+
+function openScoreDialog() {
+  scoreEntry.value = holeScore.value ?? (par.value > 0 ? par.value : 1)
+  scoreError.value = ''
+  showScoreDialog.value = true
+}
+
+async function saveScore() {
+  const userId = authStore.user.value?.id
+  if (!userId || !roundId.value || !hole.value) {
+    scoreError.value = 'Start a round before saving a score.'
+    return
+  }
+  savingScore.value = true
+  scoreError.value = ''
+  try {
+    const response = await saveRoundScores(userId, roundId.value, [{ hole_id: hole.value.id, strokes: scoreEntry.value }])
+    holeScore.value = response.data[0]?.strokes ?? scoreEntry.value
+    showScoreDialog.value = false
+  } catch (requestError: any) {
+    scoreError.value = requestError?.response?.data?.detail || 'Unable to save this score.'
+  } finally {
+    savingScore.value = false
   }
 }
 
@@ -419,6 +438,7 @@ async function recordShot() {
     holeShots.value.push(response.data)
     endDistance.value = null
     shotResult.value = ''
+    showShotDialog.value = false
   } catch (requestError: any) {
     shotError.value = requestError?.response?.data?.detail || 'Unable to save this shot.'
   } finally {
@@ -434,6 +454,7 @@ function selectRecommendedClub(clubId: number) {
 watch(() => [hole.value?.id, course.value?.id, roundId.value], () => {
   currentWeather.value = null
   holeShots.value = []
+  holeScore.value = null
   roundStore.setConditions({ ...conditions.value, temperature: null, windSpeed: null, windDirectionDegrees: null, observedAt: null, timezone: null, source: null })
   void loadWeather()
   void loadHoleShots()

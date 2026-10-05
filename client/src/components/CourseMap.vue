@@ -1,8 +1,8 @@
 <template>
   <section class="relative overflow-hidden border border-[#214335] bg-[#d9e1d8] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]" :class="fullScreen ? 'rounded-none border-x-0 border-t-0' : 'rounded-[30px]'">
-    <div ref="mapElement" class="h-[620px] w-full" :class="fullScreen ? 'h-[clamp(320px,calc(100svh-155px),720px)]' : ''" role="img" aria-label="Interactive Mapbox GPS map showing the current golf hole"></div>
+    <div ref="mapElement" class="h-[620px] w-full" :class="fullScreen ? 'h-[100svh]' : ''" role="img" aria-label="Interactive Mapbox GPS map showing the current golf hole"></div>
 
-    <div class="absolute right-3 z-10 flex gap-2" :class="fullScreen ? 'top-16' : 'top-3'">
+    <div class="absolute right-3 z-10 flex gap-2" :class="fullScreen ? 'top-32' : 'top-3'">
       <button
         type="button"
         class="rounded-full border border-white/40 bg-black/25 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-white backdrop-blur-sm transition hover:bg-black/35"
@@ -13,13 +13,18 @@
       </button>
     </div>
 
-    <div v-if="playerDistance !== null" class="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full border border-white/30 bg-black/55 px-4 py-2 text-white shadow-lg backdrop-blur-sm" :class="fullScreen ? 'bottom-24' : ''">
+    <div v-if="fullScreen" class="absolute bottom-64 right-3 z-10 flex flex-col gap-2">
+      <button type="button" class="flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-[#111814]/90 text-2xl font-semibold text-white shadow-lg backdrop-blur" aria-label="Zoom in" @click="map?.zoomIn()">+</button>
+      <button type="button" class="flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-[#111814]/90 text-2xl font-semibold text-white shadow-lg backdrop-blur" aria-label="Zoom out" @click="map?.zoomOut()">−</button>
+    </div>
+
+    <div v-if="playerDistance !== null && !fullScreen" class="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full border border-white/30 bg-black/55 px-4 py-2 text-white shadow-lg backdrop-blur-sm">
       <span class="text-[10px] uppercase tracking-[0.18em] text-white/75">You to pin</span>
       <div class="mt-1 text-center text-xl font-black text-[#c8ff00]">{{ playerDistance }} <span class="text-[10px] tracking-[0.14em] text-white/75">YDS</span></div>
     </div>
 
-    <p v-if="mapError" class="absolute inset-x-3 top-14 z-10 rounded-xl bg-black/55 p-2 text-[10px] leading-5 text-[#f7dfe2]" role="alert">{{ mapError }}</p>
-    <p v-if="locationError" class="absolute inset-x-3 top-14 z-10 rounded-xl bg-black/55 p-2 text-[10px] leading-5 text-[#f7dfe2]" role="alert">{{ locationError }}</p>
+    <p v-if="mapError" class="absolute inset-x-3 z-10 rounded-xl bg-black/65 p-2 text-[10px] leading-5 text-[#f7dfe2]" :class="fullScreen ? 'top-36' : 'top-14'" role="alert">{{ mapError }}</p>
+    <p v-if="locationError" class="absolute inset-x-3 z-10 rounded-xl bg-black/65 p-2 text-[10px] leading-5 text-[#f7dfe2]" :class="fullScreen ? 'top-36' : 'top-14'" role="alert">{{ locationError }}</p>
   </section>
 </template>
 
@@ -57,7 +62,7 @@ function pointCoordinates(point: GeoJsonPoint | null | undefined): GeoJsonPositi
 function markerElement(kind: 'tee' | 'pin' | 'player' | 'target', label: string) {
   const element = document.createElement('div')
   element.className = `course-marker course-marker-${kind}`
-  element.textContent = label
+  element.textContent = kind === 'player' ? '' : label
   return element
 }
 
@@ -202,6 +207,12 @@ function updateCourseLayers() {
   if (!map || !map.isStyleLoaded()) return
   const source = map.getSource('hole-features') as mapboxgl.GeoJSONSource | undefined
   source?.setData(holeFeatureCollection() as Parameters<mapboxgl.GeoJSONSource['setData']>[0])
+  const tee = pointCoordinates(props.hole?.tee_location)
+  const pin = pointCoordinates(props.hole?.pin_location)
+  const line = map.getSource('player-pin-line') as mapboxgl.GeoJSONSource | undefined
+  if (tee && pin && !playerMarker) {
+    line?.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [tee, pin] } } as Parameters<mapboxgl.GeoJSONSource['setData']>[0])
+  }
   updateMarkers()
 }
 
@@ -299,11 +310,10 @@ onMounted(async () => {
     bearing: initialBearing ?? 0,
     attributionControl: true
   })
-  map.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'bottom-right')
   map.on('load', () => {
     map?.addSource('hole-features', { type: 'geojson', data: holeFeatureCollection() as Parameters<mapboxgl.GeoJSONSource['setData']>[0] })
     map?.addSource('player-pin-line', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
-    map?.addLayer({ id: 'player-pin-line', type: 'line', source: 'player-pin-line', paint: { 'line-color': '#c8ff00', 'line-width': 3, 'line-dasharray': [2, 2] } })
+    map?.addLayer({ id: 'player-pin-line', type: 'line', source: 'player-pin-line', paint: { 'line-color': '#ffffff', 'line-width': 2, 'line-opacity': 0.85 } })
     map?.addLayer({ id: 'hole-fairway', type: 'fill', source: 'hole-features', filter: ['==', ['get', 'kind'], 'fairway'], paint: { 'fill-color': '#44775a', 'fill-opacity': 0.4 } })
     map?.addLayer({ id: 'hole-green', type: 'fill', source: 'hole-features', filter: ['==', ['get', 'kind'], 'green'], paint: { 'fill-color': '#73a875', 'fill-opacity': 0.65 } })
     map?.addLayer({ id: 'hole-bunker', type: 'fill', source: 'hole-features', filter: ['==', ['get', 'kind'], 'bunker'], paint: { 'fill-color': '#d5b078', 'fill-opacity': 0.8 } })
@@ -355,7 +365,23 @@ onBeforeUnmount(() => {
 }
 
 .course-marker-player {
-  background: #2f80ed;
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  padding: 0;
+  border-width: 2px;
+  border-color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 10px rgba(255, 255, 255, 0.12), 0 2px 12px rgba(0, 0, 0, 0.45);
+}
+
+.course-marker-player::after {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ffffff;
+  content: '';
 }
 
 .legend-dot {

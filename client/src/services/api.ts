@@ -1,6 +1,6 @@
 import axios, { type AxiosInstance } from 'axios'
 import { Capacitor } from '@capacitor/core'
-import type { Club, Conditions, Course, GolferProfile, Hole, Recommendation, Round, Shot, User } from '../types'
+import type { Club, Conditions, Course, GolferProfile, Hole, Recommendation, Round, RoundScore, Shot, User } from '../types'
 
 const configuredBaseURL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
 const baseURL = Capacitor.isNativePlatform()
@@ -63,6 +63,6 @@ export const getCaddieExplanation = async (holeId: number, playerLocation: [numb
     explanation: string
     explanation_source: 'openai' | 'rules'
   }>('/caddie/explain', { hole_id: holeId, player_location: playerLocation, question })
-export const getRoundScores = async (roundId: number) => api.get('/round_scores/', { params: { round_id: roundId } })
+export const getRoundScores = async (roundId: number) => api.get<RoundScore[]>('/round_scores/', { params: { round_id: roundId } })
 export const saveRoundScores = async (userId: number, roundId: number, scores: Array<{ hole_id?: number; hole_number?: number; strokes: number }>) =>
-  api.post('/round_scores/batch', scores, { params: { user_id: userId, round_id: roundId } })
+  api.post<RoundScore[]>('/round_scores/batch', scores, { params: { user_id: userId, round_id: roundId } })
