@@ -13,7 +13,7 @@ services:
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: CORS_ORIGINS
-        value: https://ai-golf-caddie-web.onrender.com
+        value: https://ai-golf-caddie-web-77sj.onrender.com
       - key: OPENAI_MODEL
         value: gpt-6-astra
       - key: OPENAI_API_KEY
@@ -27,7 +27,7 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://ai-golf-caddie-api.onrender.com/api
+        value: https://ai-golf-caddie-api-77sj.onrender.com/api
     routes:
       - type: rewrite
         source: /*
