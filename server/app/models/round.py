@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import Date, ForeignKey
+from sqlalchemy import Boolean, Date, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -28,6 +28,13 @@ class Round(Base):
 
     score: Mapped[int | None] = mapped_column(
         nullable=True
+    )
+
+    is_complete: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="false",
     )
 
     user: Mapped["User"] = relationship(

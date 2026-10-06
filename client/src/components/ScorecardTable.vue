@@ -83,7 +83,7 @@ const props = withDefaults(
     userId?: number | null
   }>(),
   {
-    courseName: 'Stonehedge Golf Course',
+    courseName: 'Stonehenge Golf Course',
     holes: () => [
       { hole: 1, par: 4, strokes: null }
     ],

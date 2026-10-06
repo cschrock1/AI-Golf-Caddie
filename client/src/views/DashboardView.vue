@@ -25,31 +25,13 @@
 
     <CourseSearch class="mt-6" @select="selectCourse" @start="startCourseRound" />
 
-    <section class="mt-6 rounded-[28px] border border-white/10 bg-[#0d1d16] p-5 shadow-[0_18px_45px_rgba(0,0,0,0.18)]">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-[#c8ff00]">Latest round</p>
-          <h2 class="mt-2 text-xl font-black text-white">{{ latestRound ? formatDate(latestRound.date) : 'Your rounds will show up here' }}</h2>
-          <p class="mt-1 text-sm text-[#9aada2]">{{ latestRound ? (latestRound.score ? `Final score ${latestRound.score}` : 'Score not recorded yet') : 'Start a round to begin building your history.' }}</p>
-        </div>
-        <button v-if="latestRound" type="button" class="rounded-full border border-white/10 px-4 py-2.5 text-xs font-bold text-white transition hover:border-[#c8ff00]/50" @click="router.push('/scorecard')">Open scorecard</button>
-      </div>
+    <section v-if="scoreTrend" class="mt-6 rounded-[28px] border border-[#294b3c] bg-[#10271f] p-5 shadow-[0_18px_45px_rgba(0,0,0,0.18)]">
+      <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-[#c8ff00]">Practice insight · same holes</p>
+      <h2 class="mt-2 text-xl font-black text-white">{{ scoreTrend.title }}</h2>
+      <p class="mt-2 text-sm leading-6 text-[#a9bbb0]">{{ scoreTrend.detail }}</p>
+      <button type="button" class="mt-4 rounded-full border border-white/10 px-4 py-2 text-xs font-bold text-white transition hover:border-[#c8ff00]/50" @click="router.push('/rounds')">Compare scorecards</button>
     </section>
 
-    <section class="mt-6 rounded-[28px] border border-white/10 bg-[#0d1d16] p-5 shadow-[0_18px_45px_rgba(0,0,0,0.18)]">
-      <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-[#c8ff00]">Quick actions</p>
-      <div class="mt-4 grid gap-3 sm:grid-cols-3">
-        <button type="button" class="rounded-full bg-[#c8ff00] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-[#07140f] transition hover:brightness-110" @click="router.push('/hole')">
-          Start round
-        </button>
-        <button type="button" class="rounded-full border border-white/10 bg-[#10271f] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white transition hover:border-[#c8ff00]/50" @click="router.push('/bag')">
-          View bag
-        </button>
-        <button type="button" class="rounded-full border border-white/10 bg-[#10271f] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white transition hover:border-[#c8ff00]/50" @click="router.push('/scorecard')">
-          Scorecard
-        </button>
-      </div>
-    </section>
   </div>
 </template>
 
@@ -59,26 +41,22 @@ import { useRouter } from 'vue-router'
 import AppHeader from '../components/AppHeader.vue'
 import CourseSearch from '../components/CourseSearch.vue'
 import { authStore } from '../stores/auth'
-import { getGolferProfile, getRounds } from '../services/api'
+import { getGolferProfile, getRoundScores, getRounds } from '../services/api'
 import { roundStore } from '../stores/round'
-import type { Course } from '../types'
+import type { Course, Round, RoundScore } from '../types'
 
 const router = useRouter()
-const rounds = ref<Array<{ id: number; date: string; score?: number | null }>>([])
+const rounds = ref<Round[]>([])
+const scoreTrend = ref<{ title: string; detail: string } | null>(null)
 
 const userName = computed(() => authStore.user.value?.full_name || 'Golfer')
 const firstName = computed(() => userName.value.split(/\s+/)[0])
-const latestRound = computed(() => [...rounds.value].sort((a, b) => b.id - a.id)[0] ?? null)
 const averageScore = computed(() => {
-  const completed = rounds.value.filter((round) => typeof round.score === 'number')
+  const completed = rounds.value.filter((round) => round.is_complete !== false && typeof round.score === 'number')
   if (!completed.length) return '—'
   return Math.round(completed.reduce((sum, round) => sum + round.score!, 0) / completed.length)
 })
 const handicap = ref('—')
-
-function formatDate(date: string) {
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(`${date}T00:00:00`))
-}
 
 function selectCourse(course: Course) {
   roundStore.setCourse(course)
@@ -86,7 +64,42 @@ function selectCourse(course: Course) {
 
 function startCourseRound(course: Course) {
   roundStore.setCourse(course)
-  router.push({ path: '/hole', query: { course: String(course.id), hole: '1' } })
+  roundStore.setRoundId(null)
+  router.push({ path: '/hole', query: { course: String(course.id), hole: '1', new: '1' } })
+}
+
+async function loadScoreTrend(completedRounds: Round[]) {
+  const candidates = [...completedRounds]
+    .filter((round) => round.is_complete !== false)
+    .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id)
+    .slice(0, 24)
+  const scoreResults = await Promise.allSettled(candidates.map((round) => getRoundScores(round.id)))
+  const groups = new Map<string, Array<{ round: Round; scores: RoundScore[]; total: number }>>()
+  scoreResults.forEach((result, index) => {
+    if (result.status !== 'fulfilled' || result.value.data.length === 0) return
+    const scores = result.value.data
+    const signature = scores.map((score) => score.hole_id).sort((a, b) => a - b).join(',')
+    const group = groups.get(signature) ?? []
+    group.push({ round: candidates[index], scores, total: scores.reduce((sum, score) => sum + score.strokes, 0) })
+    groups.set(signature, group)
+  })
+  const comparable = [...groups.values()]
+    .filter((group) => group.length >= 6)
+    .sort((a, b) => b[0].round.date.localeCompare(a[0].round.date))[0]
+  if (!comparable) return
+  const recent = comparable.slice(0, 3)
+  const previous = comparable.slice(3, 6)
+  const recentAverage = recent.reduce((sum, item) => sum + item.total, 0) / recent.length
+  const previousAverage = previous.reduce((sum, item) => sum + item.total, 0) / previous.length
+  const difference = recentAverage - previousAverage
+  const recentText = recentAverage.toFixed(1).replace(/\.0$/, '')
+  if (difference <= -0.5) {
+    scoreTrend.value = { title: 'Your scores are moving down', detail: `Across the same ${recent[0].scores.length} scored ${recent[0].scores.length === 1 ? 'hole' : 'holes'}, your latest three rounds averaged ${recentText} strokes—${Math.abs(difference).toFixed(1).replace(/\.0$/, '')} lower than the three before. Keep doing what’s working.` }
+  } else if (difference >= 0.5) {
+    scoreTrend.value = { title: 'Pick one hole to work on', detail: `Across the same ${recent[0].scores.length} scored ${recent[0].scores.length === 1 ? 'hole' : 'holes'}, your latest three rounds averaged ${recentText} strokes—${difference.toFixed(1).replace(/\.0$/, '')} higher than the three before. Compare those scorecards to spot where shots are adding up.` }
+  } else {
+    scoreTrend.value = { title: 'Your scoring is steady', detail: `Your latest six comparable rounds are staying close to the same score across ${recent[0].scores.length} scored ${recent[0].scores.length === 1 ? 'hole' : 'holes'}. Track club and shot results to build a more specific practice focus.` }
+  }
 }
 
 onMounted(async () => {
@@ -100,9 +113,11 @@ onMounted(async () => {
     ])
     rounds.value = roundsResponse.data
     handicap.value = profileResponse.data.handicap ?? '—'
+    void loadScoreTrend(roundsResponse.data)
   } catch {
     rounds.value = []
     handicap.value = '—'
+    scoreTrend.value = null
   }
 })
 </script>

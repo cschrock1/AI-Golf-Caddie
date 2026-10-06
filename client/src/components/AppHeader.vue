@@ -24,15 +24,6 @@
         </button>
       </div>
     </div>
-
-    <div v-if="!compact && (courseName || holeLabel)" class="mx-auto max-w-6xl border-t border-[#17382d] px-4 py-3 text-sm text-[#d4e0d8] sm:px-6">
-      <div class="flex items-center justify-between gap-3">
-        <div>
-          <p class="text-[10px] uppercase tracking-[0.26em] text-[#8ca49a]">Current round</p>
-          <p class="mt-1 text-base font-semibold text-white">{{ courseName || 'No active course' }}</p>
-        </div>
-      </div>
-    </div>
   </header>
 </template>
 

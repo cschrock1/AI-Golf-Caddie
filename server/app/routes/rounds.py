@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.course import Course
 from app.models.round import Round
+from app.models.round_score import RoundScore
 from app.models.user import User
 from app.schemas.round import RoundCreate, RoundResponse
 from app.core.security import get_current_user
@@ -90,3 +91,23 @@ def delete_round(
     db.delete(db_round)
     db.commit()
     return None
+
+
+@router.post("/{round_id}/complete", response_model=RoundResponse)
+def complete_round(
+    round_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    db_round = db.query(Round).filter(Round.id == round_id).first()
+    if not db_round:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Round not found")
+    if db_round.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to complete this round")
+
+    scores = db.query(RoundScore).filter(RoundScore.round_id == round_id).all()
+    db_round.score = sum(score.strokes for score in scores) or None
+    db_round.is_complete = True
+    db.commit()
+    db.refresh(db_round)
+    return db_round

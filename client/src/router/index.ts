@@ -10,6 +10,8 @@ const routes = [
   { path: '/hole', name: 'Hole', component: () => import('../views/HoleView.vue'), meta: { requiresAuth: true } },
   { path: '/caddie', name: 'Caddie', component: () => import('../views/CaddieView.vue'), meta: { requiresAuth: true } },
   { path: '/scorecard', name: 'Scorecard', component: () => import('../views/ScorecardView.vue'), meta: { requiresAuth: true } },
+  { path: '/rounds', name: 'RoundHistory', component: () => import('../views/RoundHistoryView.vue'), meta: { requiresAuth: true } },
+  { path: '/round-summary', name: 'RoundSummary', component: () => import('../views/RoundSummaryView.vue'), meta: { requiresAuth: true } },
   { path: '/profile', name: 'Profile', component: () => import('../views/ProfileView.vue'), meta: { requiresAuth: true } },
   { path: '/bag', redirect: '/profile' }
 ]

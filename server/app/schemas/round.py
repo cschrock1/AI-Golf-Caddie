@@ -16,5 +16,6 @@ class RoundResponse(BaseModel):
     course_id: int
     date: date
     score: int | None
+    is_complete: bool
 
     model_config = ConfigDict(from_attributes=True)

@@ -16,6 +16,8 @@ services:
         value: https://ai-golf-caddie-web.onrender.com
       - key: OPENAI_MODEL
         value: gpt-6-astra
+      - key: OPENAI_API_KEY
+        sync: false
 
   - type: web
     name: ai-golf-caddie-web

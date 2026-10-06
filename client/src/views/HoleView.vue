@@ -19,16 +19,22 @@
 
   <main v-else-if="!hole" class="fixed inset-0 z-50 grid place-items-center bg-[#07100c] p-5 text-white">
     <section class="max-w-md rounded-3xl border border-[#6b5632] bg-[#201c13] p-6 text-center">
-      <p class="text-xs font-bold uppercase tracking-[0.2em] text-[#f0d9a8]">Hole not mapped yet</p>
+      <p class="text-xs font-bold uppercase tracking-[0.2em] text-[#f0d9a8]">Hole data unavailable</p>
       <h1 class="mt-3 text-2xl font-black">{{ courseName }}</h1>
-      <p class="mt-2 text-sm leading-6 text-white/70">Only mapped holes are available for play. This course currently has {{ holes.length }} mapped {{ holes.length === 1 ? 'hole' : 'holes' }}.</p>
-      <button v-if="holes.length" type="button" class="mt-5 rounded-xl bg-[#c8ff00] px-5 py-3 text-sm font-bold text-[#07140f]" @click="selectHole(holes[0].hole_number)">Open mapped Hole {{ holes[0].hole_number }}</button>
-      <button type="button" class="ml-2 mt-5 rounded-xl border border-white/15 px-5 py-3 text-sm font-semibold" @click="router.push('/dashboard')">Back</button>
+      <p class="mt-2 text-sm leading-6 text-white/70">Scorecard data is unavailable for this hole. GPS mapping is currently available for Hole 1 only.</p>
+      <button type="button" class="mt-5 rounded-xl border border-white/15 px-5 py-3 text-sm font-semibold" @click="router.push('/dashboard')">Back</button>
     </section>
   </main>
 
   <main v-else class="fixed inset-0 z-30 overflow-hidden bg-[#101914] text-white">
-    <CourseMap :hole="hole" :course="course" :target="recommendation?.target_location ?? null" :full-screen="true" />
+    <CourseMap v-if="hasGpsData" :hole="hole" :course="course" :full-screen="true" @distance-change="updateMapDistance" />
+    <div v-else class="absolute inset-0 grid place-items-center bg-[#101914] px-6 pb-24 text-center">
+      <div class="max-w-sm rounded-3xl border border-white/10 bg-[#0b1511]/90 p-6 shadow-2xl">
+        <p class="text-xs font-bold uppercase tracking-[0.2em] text-[#c8ff00]">GPS unavailable</p>
+        <h2 class="mt-2 text-2xl font-black">No GPS data available</h2>
+        <p class="mt-2 text-sm leading-6 text-white/65">GPS mapping is currently available for Hole 1. You can still record a score for this hole.</p>
+      </div>
+    </div>
 
     <header class="pointer-events-none absolute inset-x-3 top-3 z-20 flex items-start gap-2 sm:inset-x-5 sm:top-5">
       <button type="button" class="pointer-events-auto grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#111512]/95 text-3xl shadow-xl backdrop-blur" aria-label="Back to dashboard" @click="router.push('/dashboard')">‹</button>
@@ -39,7 +45,7 @@
           <div class="flex min-w-[112px] items-center gap-3 rounded-[20px] bg-[#111312] px-4 py-2.5">
             <span class="text-4xl font-black leading-none">{{ holeNumber }}</span>
             <div class="min-w-0">
-              <p class="truncate text-xs font-semibold text-white/65">Mapped tee</p>
+              <p class="truncate text-xs font-semibold text-white/65">Hole length</p>
               <p class="whitespace-nowrap text-lg font-bold leading-tight">{{ pinDistance || '—' }}<span class="ml-1 text-xs font-semibold">yds</span></p>
             </div>
           </div>
@@ -52,52 +58,60 @@
               <p class="text-[10px] text-white/55">Score</p>
               <p class="text-2xl font-bold">{{ holeScore ?? '—' }}</p>
             </div>
-            <div class="flex flex-col gap-1">
-              <button type="button" class="grid h-7 w-7 place-items-center rounded-full bg-white/10 text-lg disabled:opacity-30" aria-label="Previous mapped hole" :disabled="holeIndex <= 0" @click="selectHole(holes[holeIndex - 1]?.hole_number)">‹</button>
-              <button type="button" class="grid h-7 w-7 place-items-center rounded-full bg-white/10 text-lg disabled:opacity-30" aria-label="Next mapped hole" :disabled="holeIndex < 0 || holeIndex >= holes.length - 1" @click="selectHole(holes[holeIndex + 1]?.hole_number)">›</button>
-            </div>
           </div>
         </div>
       </section>
     </header>
 
-    <div class="absolute left-3 top-[38%] z-20 rounded-[28px] bg-white text-[#161817] shadow-xl sm:left-6">
-      <div class="flex items-center gap-3 pr-4">
-        <div class="grid min-h-[82px] min-w-[82px] place-items-center rounded-full bg-[#151817] px-3 text-center text-white">
-          <span class="text-3xl font-black leading-none">{{ liveDistance ?? pinDistance ?? '—' }}<span class="ml-0.5 text-xs">y</span></span>
-        </div>
-        <div class="py-2">
-          <p class="text-xs text-[#666]">{{ liveDistance != null ? 'To pin' : 'Tee to pin' }}</p>
-          <p class="text-xl font-bold leading-tight">{{ liveDistance != null ? 'GPS distance' : 'Hole yardage' }}</p>
-        </div>
-      </div>
-    </div>
-
-    <aside class="absolute right-3 top-[42%] z-20 w-[94px] rounded-[24px] bg-[#151817]/95 px-3 py-3 text-center shadow-xl backdrop-blur sm:right-6" aria-label="Current wind conditions">
-      <div class="flex items-center justify-center gap-1 text-sm font-semibold">Wind <span class="grid h-5 w-5 place-items-center rounded-full bg-[#2588ef] text-xs">›</span></div>
-      <p class="my-2 text-4xl leading-none" :style="{ transform: `rotate(${windArrowRotation}deg)` }" aria-hidden="true">↑</p>
-      <p class="text-lg font-bold leading-tight">{{ currentWeather?.windSpeed ?? '—' }}<span class="ml-1 text-xs font-medium">mph</span></p>
-      <p class="mt-1 truncate text-[9px] uppercase tracking-wide text-white/55">{{ weatherLoading ? 'Updating' : windDirectionLabel }}</p>
-      <p v-if="weatherError && !weatherLoading" class="mt-1 text-[9px] leading-tight text-white/45">Unavailable</p>
-    </aside>
-
-    <footer class="pointer-events-none absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-20 flex flex-col gap-2 sm:inset-x-auto sm:right-8 sm:w-[min(560px,calc(100%-4rem))] sm:left-1/2 sm:-translate-x-1/2">
-      <button type="button" class="pointer-events-auto flex h-[68px] items-center justify-center gap-4 rounded-[20px] bg-[#171a19]/95 px-5 text-lg font-bold shadow-xl backdrop-blur transition active:scale-[0.99]" @click="showShotDialog = true">
-        <span class="grid h-12 w-12 place-items-center rounded-2xl bg-[#101211] text-2xl" aria-hidden="true">⌖</span>
-        <span>Track shot</span>
-        <span class="text-xs font-medium text-white/55">{{ holeShots.length ? `${holeShots.length} logged` : 'Add shot' }}</span>
-      </button>
-
-      <nav class="pointer-events-auto grid grid-cols-[74px_42px_1fr_42px_74px] items-stretch gap-1.5">
-        <button type="button" class="flex min-h-[74px] flex-col items-center justify-center rounded-[18px] bg-[#171a19]/95 text-[11px] font-semibold shadow-xl" @click="router.push('/scorecard')">Scorecard<span class="mt-1 text-[#2588ef]">●</span></button>
-        <button type="button" class="rounded-[18px] bg-[#171a19]/95 text-3xl disabled:opacity-30" aria-label="Previous mapped hole" :disabled="holeIndex <= 0" @click="selectHole(holes[holeIndex - 1]?.hole_number)">‹</button>
-        <button type="button" class="rounded-[18px] bg-[#2588ef] px-2 py-2 text-center shadow-xl" aria-label="Enter score for this hole" @click="openScoreDialog">
-          <span class="block text-xl font-black">Hole {{ holeNumber }}</span>
-          <span class="block text-sm">{{ holeScore != null ? `Score ${holeScore}` : 'Enter score' }}</span>
+    <footer class="pointer-events-none absolute inset-x-2 bottom-[calc(env(safe-area-inset-bottom)+5.25rem)] z-20 sm:inset-x-auto sm:left-1/2 sm:w-[min(620px,calc(100%-2rem))] sm:-translate-x-1/2">
+      <section class="pointer-events-auto max-h-[72svh] overflow-hidden rounded-[28px] border border-white/10 bg-[#0b1511]/95 shadow-2xl backdrop-blur-xl">
+        <button type="button" class="w-full px-4 pb-4 pt-3 text-left" :aria-expanded="sheetExpanded" @click="sheetExpanded = !sheetExpanded">
+          <span class="mx-auto mb-3 block h-1 w-10 rounded-full bg-white/30" aria-hidden="true"></span>
+          <span class="flex items-center justify-between gap-3">
+            <span class="min-w-0">
+              <span class="block text-[10px] font-bold uppercase tracking-[0.18em] text-[#a6b6ad]">Hole {{ holeNumber }} · Par {{ par || '—' }}</span>
+              <span class="mt-1 block truncate text-base font-bold text-white">{{ courseName }}</span>
+              <span class="mt-1 block text-xs text-white/55">{{ liveDistance != null ? 'Distance from tee marker to green center' : 'Drag the tee marker to set your position' }}</span>
+            </span>
+            <span class="shrink-0 rounded-2xl bg-[#c8ff00] px-4 py-2 text-right text-[#07140f]">
+              <span class="block text-[9px] font-black uppercase tracking-[0.12em]">{{ liveDistance != null ? 'To green' : 'Hole length' }}</span>
+              <span class="mt-0.5 block text-3xl font-black leading-none">{{ liveDistance ?? pinDistance ?? '—' }}<span class="ml-1 text-xs">yd</span></span>
+            </span>
+          </span>
+          <span class="mt-3 flex items-center justify-between border-t border-white/10 pt-3 text-xs text-white/65">
+            <span>{{ locationSummary }}</span>
+            <span class="text-[#c8ff00]">{{ sheetExpanded ? 'Hide details ↑' : 'Round details ↓' }}</span>
+          </span>
         </button>
-        <button type="button" class="rounded-[18px] bg-[#171a19]/95 text-3xl disabled:opacity-30" aria-label="Next mapped hole" :disabled="holeIndex < 0 || holeIndex >= holes.length - 1" @click="selectHole(holes[holeIndex + 1]?.hole_number)">›</button>
-        <button type="button" class="flex min-h-[74px] flex-col items-center justify-center rounded-[18px] bg-[#171a19]/95 text-[11px] font-semibold shadow-xl" @click="showTools = true">Tools<span class="mt-1 text-[#2588ef]">●</span></button>
-      </nav>
+
+        <div v-if="sheetExpanded" class="max-h-[42svh] space-y-4 overflow-y-auto border-t border-white/10 px-4 pb-4 pt-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+              <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-white/50">Wind</p>
+              <p class="mt-1 text-lg font-black text-white">{{ currentWeather?.windSpeed ?? '—' }} <span class="text-xs font-semibold">mph</span></p>
+              <p class="text-xs text-white/55">{{ weatherLoading ? 'Updating…' : windDirectionLabel }}</p>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+              <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-white/50">Score</p>
+              <p class="mt-1 text-lg font-black text-white">{{ holeScore ?? '—' }} <span class="text-xs font-semibold text-white/55">{{ holeScore != null ? 'strokes' : 'not entered' }}</span></p>
+              <p class="text-xs text-white/55">{{ weatherError && !weatherLoading ? 'Weather unavailable' : 'Center of green target' }}</p>
+            </div>
+          </div>
+          <div v-if="recommendationLoading || recommendation || recommendationError" class="rounded-2xl border border-[#c8ff00]/20 bg-[#c8ff00]/5 p-3">
+            <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-[#c8ff00]">Caddie</p>
+            <p v-if="recommendationLoading" class="mt-1 text-sm text-white/65">Finding a club suggestion…</p>
+            <p v-else-if="recommendation" class="mt-1 text-sm font-bold text-white">{{ recommendation.club_name }} · {{ recommendation.carry_yards }} yd</p>
+            <p v-else class="mt-1 text-sm text-white/65">{{ recommendationError }}</p>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" class="rounded-xl bg-[#c8ff00] px-3 py-3 text-sm font-black text-[#07140f]" @click="showShotDialog = true">Track shot<span class="mt-0.5 block text-[10px] font-semibold">{{ holeShots.length ? `${holeShots.length} logged` : 'Log a shot' }}</span></button>
+            <button type="button" class="rounded-xl bg-[#2588ef] px-3 py-3 text-sm font-black text-white" @click="openScoreDialog">{{ holeScore != null ? 'Update score' : 'Enter score' }}<span class="mt-0.5 block text-[10px] font-semibold">{{ holeScore != null ? `${holeScore} strokes` : `Par ${par}` }}</span></button>
+            <button type="button" class="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-bold text-white" @click="router.push('/caddie')">Ask caddie<span class="mt-0.5 block text-[10px] font-medium text-white/55">Club recommendation</span></button>
+            <button type="button" class="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-bold text-white" @click="router.push('/scorecard')">Open scorecard<span class="mt-0.5 block text-[10px] font-medium text-white/55">Round totals</span></button>
+          </div>
+          <button type="button" class="w-full rounded-xl border border-white/10 px-3 py-2.5 text-xs font-semibold text-white/65" @click="showTools = true">More round tools</button>
+        </div>
+      </section>
     </footer>
 
     <div v-if="showShotDialog" class="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-3 sm:items-center" @click.self="showShotDialog = false">
@@ -154,6 +168,8 @@
           <button type="button" class="rounded-xl border border-white/10 bg-white/5 p-4 text-left font-semibold" @click="showTools = false; router.push('/profile')">Profile & bag<span class="mt-1 block text-xs font-normal text-white/50">Edit golfer data</span></button>
           <button type="button" class="rounded-xl border border-white/10 bg-white/5 p-4 text-left font-semibold" @click="showTools = false; router.push('/scorecard')">Scorecard<span class="mt-1 block text-xs font-normal text-white/50">Round totals</span></button>
         </div>
+        <button type="button" :disabled="!roundId || endingRound" class="mt-3 w-full rounded-xl border border-[#ffaaa9]/35 bg-[#3a1d20]/60 px-4 py-3 text-sm font-bold text-[#ffcfce] disabled:opacity-40" @click="endRound">{{ endingRound ? 'Ending round…' : 'End round and save to history' }}</button>
+        <p v-if="endRoundError" class="mt-2 text-sm text-[#ffaaa9]" role="alert">{{ endRoundError }}</p>
       </section>
     </div>
 
@@ -175,13 +191,14 @@ import { useRoute, useRouter } from 'vue-router'
 import CourseMap from '../components/CourseMap.vue'
 import { roundStore } from '../stores/round'
 import { authStore } from '../stores/auth'
-import { createRound, createShot, getClubs, getCourses, getCourseHoles, getCurrentWeather, getHole, getRecommendation, getRoundScores, getRounds, getShots, saveRoundScores } from '../services/api'
+import { completeRound, createRound, createShot, getClubs, getCourses, getCourseHoles, getCurrentWeather, getHole, getRecommendation, getRoundScores, getRounds, getShots, saveRoundScores } from '../services/api'
 import type { Club, Course, Conditions, Hole, Recommendation, RoundScore, Shot } from '../types'
 
 const router = useRouter()
 const route = useRoute()
 const showBag = ref(false)
 const showTools = ref(false)
+const sheetExpanded = ref(false)
 const showShotDialog = ref(false)
 const showScoreDialog = ref(false)
 const bagMessage = ref('')
@@ -207,23 +224,30 @@ const endDistance = ref<number | null>(null)
 const shotResult = ref('')
 const savingShot = ref(false)
 const shotError = ref('')
+const endingRound = ref(false)
+const endRoundError = ref('')
 const roundId = roundStore.selectedRoundId
 
-const holeNumber = computed(() => {
-  const requestedHole = Number(route.query.hole)
-  return holes.value.some((item) => item.hole_number === requestedHole)
-    ? requestedHole
-    : Number.isInteger(requestedHole) && requestedHole >= 1 && requestedHole <= 18
-      ? requestedHole
-      : holes.value[0]?.hole_number ?? 1
-})
-const holeIndex = computed(() => holes.value.findIndex((item) => item.hole_number === holeNumber.value))
+const holeNumber = computed(() => 1)
 const courseName = computed(() => course.value?.name || 'Golf course')
 const par = computed(() => hole.value?.par ?? 0)
 const pinDistance = computed(() => hole.value?.yardage ?? 0)
+const hasGpsData = computed(() => Boolean(holeNumber.value === 1 && hole.value && (
+  course.value?.name.toLowerCase().includes('stonehenge')
+  || hole.value.tee_location || hole.value.pin_location || hole.value.green_geometry || hole.value.fairway_geometry
+)))
 
 const conditions = roundStore.conditions
-const liveDistance = computed(() => conditions.value.holeDistance ?? null)
+const mappedDistance = ref<number | null>(null)
+const liveDistance = computed(() => mappedDistance.value ?? conditions.value.holeDistance ?? null)
+function updateMapDistance(distance: number) {
+  mappedDistance.value = distance
+}
+const locationSummary = computed(() => {
+  return conditions.value.playerLocation
+    ? 'Drag tee marker to adjust your position'
+    : 'Drag tee marker to set your position'
+})
 const windDirectionLabel = computed(() => {
   const degrees = currentWeather.value?.windDirectionDegrees
   if (degrees == null) return 'Direction unavailable'
@@ -234,6 +258,9 @@ const canRecordShot = computed(() => Boolean(roundId.value && hole.value?.id && 
 const clubName = (clubId: number) => bagOptions.value.find((club) => club.id === clubId)?.name || 'Club'
 
 async function loadHoleData() {
+  if (route.query.hole !== undefined && route.query.hole !== '1') {
+    router.replace({ query: { ...route.query, hole: '1' } })
+  }
   isLoading.value = true
   error.value = ''
 
@@ -255,13 +282,13 @@ async function loadHoleData() {
         }
       }
     }
-    if (!selectedCourse) throw new Error('No courses with mapped holes are available yet.')
+    if (!selectedCourse) throw new Error('No course scorecard data is available yet.')
     const courseChanged = roundStore.selectedCourse.value?.id !== selectedCourse.id
     course.value = selectedCourse
     // sync selected course into roundStore so other views (Caddie) receive the active course
     if (courseChanged) {
       roundStore.setCourse(selectedCourse)
-      roundStore.setConditions({ ...conditions.value, playerLocation: null, holeDistance: null })
+      roundStore.setConditions({ ...conditions.value, playerLocation: null, holeDistance: null, locationAccuracy: null })
     }
 
     if (loadedHoles) {
@@ -286,15 +313,31 @@ async function loadHoleData() {
       hole.value = localHole
     }
 
+    if (!hasGpsData.value) {
+      roundStore.setConditions({ ...conditions.value, playerLocation: null, holeDistance: null, locationAccuracy: null })
+    }
+
     const user = authStore.user.value
     if (user) {
       const roundsResponse = await getRounds(user.id)
-      const activeRound = roundsResponse.data.find((round) => round.id === roundId.value && round.course_id === selectedCourse.id)
-        || [...roundsResponse.data].filter((round) => round.course_id === selectedCourse.id).sort((a, b) => b.id - a.id)[0]
+      const isStartingNewRound = route.query.new === '1'
+      const openRounds = roundsResponse.data.filter((round) => !round.is_complete && round.course_id === selectedCourse.id)
+      const activeRound = isStartingNewRound ? undefined : (
+        openRounds.find((round) => round.id === roundId.value)
+          || [...openRounds].sort((a, b) => b.id - a.id)[0]
+      )
       if (activeRound) roundStore.setRoundId(activeRound.id)
       else {
+        if (isStartingNewRound) {
+          roundStore.setConditions({ ...conditions.value, playerLocation: null, holeDistance: null, locationAccuracy: null })
+        }
         const newRound = await createRound({ user_id: user.id, course_id: selectedCourse.id, date: new Date().toISOString().slice(0, 10) })
         roundStore.setRoundId(newRound.data.id)
+        if (isStartingNewRound) {
+          const remainingQuery = { ...route.query }
+          delete remainingQuery.new
+          router.replace({ query: remainingQuery })
+        }
       }
     }
     roundStore.setHole(holeNumber.value)
@@ -323,13 +366,6 @@ loadHoleData()
 watch([holeNumber, () => route.query.course], () => {
   loadHoleData()
 })
-
-function selectHole(nextHole?: number) {
-  if (!nextHole) return
-  router.replace({ query: { ...route.query, hole: String(nextHole) } })
-  // keep central round store in sync with selected hole
-  roundStore.setHole(nextHole)
-}
 
 function selectBagClub(club: Club) {
   shotClubId.value = club.id
@@ -419,6 +455,32 @@ async function saveScore() {
     scoreError.value = requestError?.response?.data?.detail || 'Unable to save this score.'
   } finally {
     savingScore.value = false
+  }
+}
+
+async function endRound() {
+  if (!roundId.value || endingRound.value) return
+  try {
+    const savedScores = await getRoundScores(roundId.value)
+    const hasScores = savedScores.data.length > 0
+    const confirmation = hasScores
+      ? 'End this round and save it to your round history?'
+      : 'No hole scores have been entered. End this round and save an empty round to your history?'
+    if (!window.confirm(confirmation)) return
+  } catch (requestError: any) {
+    endRoundError.value = requestError?.response?.data?.detail || 'Unable to check your saved scores. Please try again.'
+    return
+  }
+  endingRound.value = true
+  endRoundError.value = ''
+  try {
+    await completeRound(roundId.value)
+    showTools.value = false
+    await router.push({ path: '/round-summary', query: { round: String(roundId.value) } })
+  } catch (requestError: any) {
+    endRoundError.value = requestError?.response?.data?.detail || 'Unable to end this round. Try again.'
+  } finally {
+    endingRound.value = false
   }
 }
 

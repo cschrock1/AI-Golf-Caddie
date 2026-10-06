@@ -18,10 +18,9 @@
             <button v-if="!editing" type="button" class="rounded-full border border-[#2b4d43] bg-[#10271f] px-4 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-[#c8ff00]" @click="startEdit">Edit profile</button>
           </div>
 
-          <div v-if="!editing" class="mt-6 grid grid-cols-3 divide-x divide-[#214335] rounded-2xl border border-[#214335] bg-[#10271f]">
+          <div v-if="!editing" class="mt-6 grid grid-cols-2 divide-x divide-[#214335] rounded-2xl border border-[#214335] bg-[#10271f]">
             <div class="p-3 text-center"><p class="text-xl font-black text-white">{{ clubs.length }}</p><p class="mt-1 text-[9px] uppercase tracking-[0.14em] text-[#8ca49a]">Clubs</p></div>
             <div class="p-3 text-center"><p class="text-xl font-black text-white">{{ profile?.handicap ?? '—' }}</p><p class="mt-1 text-[9px] uppercase tracking-[0.14em] text-[#8ca49a]">Handicap</p></div>
-            <div class="p-3 text-center"><p class="text-xl font-black text-white">{{ profile?.preferred_tee || '—' }}</p><p class="mt-1 text-[9px] uppercase tracking-[0.14em] text-[#8ca49a]">Tee</p></div>
           </div>
 
           <form v-else class="mt-6 space-y-4 rounded-2xl border border-[#214335] bg-[#10271f] p-4" @submit.prevent="saveProfile">
@@ -29,17 +28,9 @@
               <label class="mb-2 block text-[10px] uppercase tracking-[0.2em] text-[#8ca49a]" for="profile-name">Full name</label>
               <input id="profile-name" v-model="form.full_name" type="text" class="w-full rounded-full border border-[#214335] bg-[#0d2119] px-4 py-3 text-white placeholder:text-[#7d9488] focus:border-[#c8ff00] focus:outline-none" placeholder="Your name" required />
             </div>
-            <div class="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label class="mb-2 block text-[10px] uppercase tracking-[0.2em] text-[#8ca49a]" for="profile-handicap">Handicap</label>
-                <input id="profile-handicap" v-model.number="form.handicap" type="number" min="0" step="0.1" class="w-full rounded-full border border-[#214335] bg-[#0d2119] px-4 py-3 text-white focus:border-[#c8ff00] focus:outline-none" placeholder="12.5" />
-              </div>
-              <div>
-                <label class="mb-2 block text-[10px] uppercase tracking-[0.2em] text-[#8ca49a]" for="profile-tee">Preferred tee</label>
-                <select id="profile-tee" v-model="form.preferred_tee" class="w-full rounded-full border border-[#214335] bg-[#0d2119] px-4 py-3 text-white focus:border-[#c8ff00] focus:outline-none">
-                  <option value="">Select tee</option><option>Black</option><option>Blue</option><option>White</option><option>Gold</option><option>Red</option>
-                </select>
-              </div>
+            <div>
+              <label class="mb-2 block text-[10px] uppercase tracking-[0.2em] text-[#8ca49a]" for="profile-handicap">Handicap</label>
+              <input id="profile-handicap" v-model.number="form.handicap" type="number" min="0" step="0.1" class="w-full rounded-full border border-[#214335] bg-[#0d2119] px-4 py-3 text-white focus:border-[#c8ff00] focus:outline-none" placeholder="12.5" />
             </div>
             <div class="flex justify-end gap-3">
               <button type="button" class="rounded-full border border-[#214335] px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#dfeee6]" @click="cancelEdit">Cancel</button>
@@ -48,6 +39,15 @@
           </form>
         </div>
       </section>
+
+      <router-link to="/rounds" class="flex items-center justify-between gap-4 rounded-[24px] border border-[#294b3c] bg-[#10271f] p-5 transition hover:border-[#c8ff00]/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c8ff00]">
+        <span>
+          <span class="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#8ca49a]">Round history</span>
+          <span class="mt-1 block text-lg font-black text-white">Previous rounds & scorecards</span>
+          <span class="mt-1 block text-sm text-[#a7b8b0]">Review your saved scores by course and date.</span>
+        </span>
+        <span class="text-2xl font-bold text-[#c8ff00]" aria-hidden="true">→</span>
+      </router-link>
 
       <section class="rounded-[30px] border border-[#1d3a2d] bg-[#10271f] p-5 sm:p-6">
         <div class="flex items-end justify-between gap-3">
@@ -91,7 +91,7 @@ const loading = ref(false)
 const error = ref('')
 const showForm = ref(false)
 const editingId = ref<number | null>(null)
-const form = ref({ full_name: '', handicap: null as number | null, preferred_tee: '' })
+const form = ref({ full_name: '', handicap: null as number | null })
 const clubForm = ref({ name: '', carry_distance: null as number | null, total_distance: null as number | null })
 
 const profileInitials = computed(() => {
@@ -131,7 +131,7 @@ async function loadProfile() {
     const clubsResponse = await getClubs(currentUser.id)
     clubs.value = clubsResponse.data
     sortClubs()
-    form.value = { full_name: currentUser.full_name || '', handicap: profile.value?.handicap ?? null, preferred_tee: profile.value?.preferred_tee || '' }
+    form.value = { full_name: currentUser.full_name || '', handicap: profile.value?.handicap ?? null }
   } catch {
     error.value = 'Unable to load your profile. Try again.'
   } finally {
@@ -144,7 +144,6 @@ function cancelEdit() {
   editing.value = false
   form.value.full_name = user.value?.full_name || ''
   form.value.handicap = profile.value?.handicap ?? null
-  form.value.preferred_tee = profile.value?.preferred_tee || ''
 }
 
 async function saveProfile() {
@@ -160,12 +159,12 @@ async function saveProfile() {
   // update or create golfer profile
   try {
     // try update first
-    await api.put(`/golfer/${currentUser.id}`, { user_id: currentUser.id, handicap: form.value.handicap, preferred_tee: form.value.preferred_tee })
+    await api.put(`/golfer/${currentUser.id}`, { user_id: currentUser.id, handicap: form.value.handicap })
   } catch (err: any) {
     if (err?.response?.status === 404) {
       // create profile instead
       try {
-        await api.post('/golfer/', { user_id: currentUser.id, handicap: form.value.handicap, preferred_tee: form.value.preferred_tee })
+        await api.post('/golfer/', { user_id: currentUser.id, handicap: form.value.handicap })
       } catch (err2: any) {
         error.value = 'Unable to save profile.'
         return

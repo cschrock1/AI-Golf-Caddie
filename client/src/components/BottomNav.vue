@@ -1,11 +1,11 @@
 <template>
   <nav class="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#07150f]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl">
-    <div class="mx-auto grid max-w-4xl grid-cols-5 gap-1 px-2 py-2 sm:gap-2">
+    <div class="mx-auto grid max-w-2xl grid-cols-5 gap-1 px-1.5 py-2 sm:gap-2 sm:px-2">
       <button
         v-for="item in navItems"
         :key="item.to"
         type="button"
-        class="flex min-h-14 flex-col items-center justify-center rounded-2xl px-2 py-2 text-[9px] font-semibold uppercase tracking-[0.12em] transition sm:text-[10px]"
+        class="flex min-h-14 flex-col items-center justify-center rounded-2xl px-1 py-2 text-[8px] font-semibold uppercase tracking-[0.08em] transition min-[390px]:text-[9px] sm:px-2 sm:text-[10px] sm:tracking-[0.12em]"
         :class="isActive(item.to) ? 'bg-[#c8ff00] text-[#07140f] shadow-[0_4px_18px_rgba(200,255,0,0.16)]' : 'text-[#9aada2] hover:bg-white/5 hover:text-white'"
         @click="go(item.to)"
       >
@@ -23,14 +23,14 @@ const route = useRoute()
 const router = useRouter()
 
 const navItems = [
-  { label: 'Dashboard', to: '/dashboard', icon: '▣' },
+  { label: 'Home', to: '/dashboard', icon: '⌂' },
   { label: 'GPS', to: '/hole', icon: '◎' },
   { label: 'Caddie', to: '/caddie', icon: '✦' },
-  { label: 'Score', to: '/scorecard', icon: '▣' },
+  { label: 'Scorecard', to: '/scorecard', icon: '▤' },
   { label: 'Profile', to: '/profile', icon: '●' }
 ]
 
-const isActive = (path: string) => route.path.startsWith(path)
+const isActive = (path: string) => route.path.startsWith(path) || (path === '/profile' && route.path === '/rounds')
 const go = (path: string) => router.push(path)
 
 </script>

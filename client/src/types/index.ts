@@ -71,6 +71,7 @@ export interface Round {
   course_id: number
   date: string
   score?: number | null
+  is_complete?: boolean
 }
 
 export interface Shot {
@@ -101,6 +102,7 @@ export interface Conditions {
   note?: string | null
   holeDistance?: number | null
   playerLocation?: GeoJsonPosition | null
+  locationAccuracy?: number | null
 }
 
 export interface Recommendation {

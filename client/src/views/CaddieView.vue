@@ -5,7 +5,7 @@
     <section class="mt-6 rounded-[30px] border border-[#1d3a2d] bg-[#0d2119] p-5">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-[#c8ff00]">Caddie preview</p>
+          <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-[#c8ff00]">AI Caddie</p>
           <h1 class="mt-2 text-3xl font-black tracking-tight text-white">Course briefing</h1>
         </div>
         <div class="text-right text-[10px] uppercase tracking-[0.18em] text-[#8ca49a]">
@@ -34,7 +34,7 @@
     </section>
 
     <section class="mt-6 rounded-[30px] border border-white/10 bg-[#0d1d16] p-4 shadow-[0_18px_45px_rgba(0,0,0,0.18)] sm:p-5">
-      <p class="mb-4 text-xs leading-5 text-[#91a69a]">This prototype uses a local sample response. It is not connected to an AI service yet.</p>
+      <p class="mb-4 text-xs leading-5 text-[#91a69a]">Ask about club choice, target, or risk. The caddie uses AI when available and falls back to distance-based guidance.</p>
       <div class="space-y-4">
         <ChatMessage v-for="message in chatMessages" :key="message.id" :message="message" />
 
@@ -50,7 +50,7 @@
       </div>
 
       <form class="mt-5 flex gap-3" @submit.prevent="sendMessage">
-        <label class="sr-only" for="chat-input">Ask the caddie preview</label>
+        <label class="sr-only" for="chat-input">Ask the AI caddie</label>
         <input
           id="chat-input"
           v-model="newMessage"
@@ -115,8 +115,6 @@ const canSend = computed(() => newMessage.value.trim().length > 0 && !isLoading.
 
 // keep briefing message in sync when round/hole changes
 watch([courseName, () => holeNumber.value, () => dist.value, () => conditions.value?.windSpeed], () => {
-  // debug: log briefing change
-  try { console.log('CaddieView: briefing change', { courseName: courseName.value, holeNumber: holeNumber.value, dist: dist.value, wind: conditions.value?.windSpeed }) } catch {}
   // update first assistant message (system briefing)
   if (chatMessages.value.length > 0 && chatMessages.value[0].role === 'assistant') {
     chatMessages.value[0].content = briefingText()

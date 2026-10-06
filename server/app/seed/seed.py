@@ -24,7 +24,7 @@ def seed(engine_url: str = None):
         # create golfer profile
         profile = db.query(GolferProfile).filter(GolferProfile.user_id == user.id).first()
         if not profile:
-            profile = GolferProfile(user_id=user.id, handicap=12.5, preferred_tee='White')
+            profile = GolferProfile(user_id=user.id, handicap=12.5)
             db.add(profile)
             db.commit()
 
@@ -51,32 +51,19 @@ def seed(engine_url: str = None):
             db.commit()
 
         # development course + holes
-        course = db.query(Course).filter(Course.name == 'Stonehedge Golf Course').first()
+        course = db.query(Course).filter(Course.name == 'Stonehenge Golf Course').first()
         if not course:
-            course = Course(name='Stonehedge Golf Course', city='Warsaw', state='IN')
+            course = Course(name='Stonehenge Golf Course', city='Warsaw', state='IN')
             db.add(course)
             db.commit()
             db.refresh(course)
 
         hole_specs = {
-            1: (4, 390),
-            2: (5, 510),
-            3: (4, 415),
-            4: (3, 175),
-            5: (4, 386),
-            6: (5, 525),
-            7: (4, 432),
-            8: (3, 168),
-            9: (5, 535),
-            10: (4, 397),
-            11: (3, 158),
-            12: (4, 420),
-            13: (5, 548),
-            14: (4, 401),
-            15: (3, 172),
-            16: (4, 448),
-            17: (4, 413),
-            18: (5, 520),
+            1: (4, 424), 2: (4, 396), 3: (3, 174), 4: (4, 426),
+            5: (3, 204), 6: (5, 509), 7: (3, 195), 8: (4, 441),
+            9: (5, 563), 10: (4, 404), 11: (5, 549), 12: (4, 460),
+            13: (3, 188), 14: (4, 406), 15: (4, 381), 16: (4, 431),
+            17: (3, 197), 18: (5, 553),
         }
 
         for hole_number, (par, yardage) in hole_specs.items():
@@ -91,6 +78,10 @@ def seed(engine_url: str = None):
                     par=par,
                     yardage=yardage
                 ))
+            else:
+                # Keep seed data aligned with the official Stonehenge scorecard.
+                hole.par = par
+                hole.yardage = yardage
         db.commit()
 
         print('Seed completed')

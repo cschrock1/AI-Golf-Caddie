@@ -34,6 +34,8 @@ export const getHole = async (courseId: number, holeNumber: number) => api.get<H
 export const getRounds = async (userId: number) => api.get<Round[]>('/rounds/', { params: { user_id: userId } })
 export const createRound = async (payload: { user_id: number; course_id: number; date: string; score?: number | null }) =>
   api.post<Round>('/rounds/', payload)
+export const completeRound = async (roundId: number) => api.post<Round>(`/rounds/${roundId}/complete`)
+export const deleteRound = async (roundId: number, userId: number) => api.delete(`/rounds/${roundId}`, { params: { user_id: userId } })
 export const getShots = async (roundId: number) => api.get<Shot[]>('/shots/', { params: { round_id: roundId } })
 export const createShot = async (payload: Omit<Shot, 'id'>) => api.post<Shot>('/shots/', payload)
 export const getRecommendation = async (holeId: number, playerLocation: [number, number]) =>
