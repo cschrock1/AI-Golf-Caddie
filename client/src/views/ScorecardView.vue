@@ -40,22 +40,29 @@
         @total-updated="updateLiveTotal"
       />
       <p class="mt-3 text-xs leading-5 text-[#91a69a]">Showing {{ holes.length }} scorecard {{ holes.length === 1 ? 'hole' : 'holes' }}. GPS mapping is currently available for Hole 1 only.</p>
+      <section v-if="!isHistoricalRound && roundId" class="mt-5 rounded-2xl border border-white/10 bg-[#0d1d16] p-4">
+        <button type="button" :disabled="endingRound" class="w-full rounded-xl border border-[#ffaaa9]/35 bg-[#3a1d20]/60 px-4 py-3 text-sm font-bold text-[#ffcfce] disabled:opacity-50" @click="endRound">
+          {{ endingRound ? 'Ending round…' : 'End round and save to history' }}
+        </button>
+        <p v-if="endRoundError" class="mt-2 text-sm text-[#ffaaa9]" role="alert">{{ endRoundError }}</p>
+      </section>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '../components/AppHeader.vue'
 import ScorecardTable from '../components/ScorecardTable.vue'
-import { getCourses, getCourseHoles, getRounds } from '../services/api'
+import { completeRound, getCourses, getCourseHoles, getRoundScores, getRounds } from '../services/api'
 import { roundStore } from '../stores/round'
 import { authStore } from '../stores/auth'
 import type { Course } from '../types'
 
 const playerName = computed(() => authStore.user.value?.full_name || 'Golfer')
 const route = useRoute()
+const router = useRouter()
 const userId = computed(() => authStore.user.value?.id ?? null)
 const courseName = ref(roundStore.selectedCourse.value?.name ?? '')
 const isHistoricalRound = computed(() => route.query.round !== undefined)
@@ -64,11 +71,42 @@ const roundDate = ref('')
 const liveTotal = ref<number | null>(null)
 const loading = ref(true)
 const loadError = ref('')
+const endingRound = ref(false)
+const endRoundError = ref('')
 const holes = ref<Array<{ hole: number; par: number; score: number | null }>>([])
 const parTotal = computed(() => holes.value.reduce((total, hole) => total + hole.par, 0))
 
 function updateLiveTotal(total: number | null) {
   liveTotal.value = total
+}
+
+async function endRound() {
+  const activeRoundId = roundId.value
+  if (!activeRoundId || isHistoricalRound.value || endingRound.value) return
+
+  try {
+    const scoresResponse = await getRoundScores(activeRoundId)
+    const confirmation = scoresResponse.data.length
+      ? 'End this round and save it to your round history?'
+      : 'No hole scores have been entered. End this round and save an empty round to your history?'
+    if (!window.confirm(confirmation)) return
+  } catch (error: unknown) {
+    endRoundError.value = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Unable to check your saved scores. Please try again.'
+    return
+  }
+
+  endingRound.value = true
+  endRoundError.value = ''
+  try {
+    await completeRound(activeRoundId)
+    roundStore.setRoundId(null)
+    window.dispatchEvent(new Event('round:completed'))
+    await router.push({ path: '/round-summary', query: { round: String(activeRoundId) } })
+  } catch (error: unknown) {
+    endRoundError.value = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Unable to end this round. Please try again.'
+  } finally {
+    endingRound.value = false
+  }
 }
 
 function formatRoundDate(date: string) {
@@ -98,8 +136,9 @@ onMounted(async () => {
     if (isHistoricalRound.value && !requestedRound) throw new Error('That round could not be found in your account.')
     const selectedRoundId = roundStore.selectedRoundId.value
     const activeRound = requestedRound
-      || roundsResponse.data.find((round) => round.id === selectedRoundId && !round.is_complete)
-      || [...roundsResponse.data].filter((round) => !round.is_complete).sort((a, b) => b.id - a.id)[0]
+      || (selectedRoundId === null
+        ? undefined
+        : roundsResponse.data.find((round) => round.id === selectedRoundId && !round.is_complete))
     let activeCourse: Course | undefined
 
     if (activeRound) {

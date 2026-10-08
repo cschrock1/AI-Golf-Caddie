@@ -322,10 +322,9 @@ async function loadHoleData() {
       const roundsResponse = await getRounds(user.id)
       const isStartingNewRound = route.query.new === '1'
       const openRounds = roundsResponse.data.filter((round) => !round.is_complete && round.course_id === selectedCourse.id)
-      const activeRound = isStartingNewRound ? undefined : (
-        openRounds.find((round) => round.id === roundId.value)
-          || [...openRounds].sort((a, b) => b.id - a.id)[0]
-      )
+      const activeRound = isStartingNewRound
+        ? undefined
+        : openRounds.find((round) => round.id === roundId.value)
       if (activeRound) roundStore.setRoundId(activeRound.id)
       else {
         if (!isStartingNewRound) {
@@ -481,6 +480,7 @@ async function endRound() {
   try {
     await completeRound(roundId.value)
     roundStore.setRoundId(null)
+    window.dispatchEvent(new Event('round:completed'))
     showTools.value = false
     await router.push({ path: '/round-summary', query: { round: String(roundId.value) } })
   } catch (requestError: any) {

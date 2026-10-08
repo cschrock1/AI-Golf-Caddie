@@ -173,10 +173,10 @@ onMounted(async () => {
     ])
     rounds.value = roundsResponse.data
     handicap.value = profileResponse.data.handicap ?? '—'
-    const openRounds = roundsResponse.data
-      .filter((round) => !round.is_complete)
-      .sort((a, b) => b.id - a.id)
-    const activeRound = openRounds.find((round) => round.id === roundStore.selectedRoundId.value) || openRounds[0]
+    const activeRoundId = roundStore.selectedRoundId.value
+    const activeRound = activeRoundId === null
+      ? undefined
+      : roundsResponse.data.find((round) => round.id === activeRoundId && !round.is_complete)
     if (activeRound) {
       roundStore.setRoundId(activeRound.id)
       const activeCourse = coursesResponse.data.find((course) => course.id === activeRound.course_id)

@@ -14,6 +14,12 @@ const selectedCourse = ref<Course | null>(storedCourse())
 function storedRoundId() {
   if (typeof window === 'undefined') return null
   try {
+    // Only rounds explicitly marked active by the current app flow should
+    // restore GPS and scorecard tabs. Ignore orphaned IDs from older versions.
+    if (localStorage.getItem('aigc_round_in_progress') !== 'true') {
+      localStorage.removeItem('aigc_active_round_id')
+      return null
+    }
     const raw = localStorage.getItem('aigc_active_round_id')
     return raw ? Number(raw) : null
   } catch {
@@ -21,6 +27,7 @@ function storedRoundId() {
   }
 }
 const selectedRoundId = ref<number | null>(storedRoundId())
+const activeRoundValidated = ref(false)
 const selectedHole = ref<number>(1)
 const selectedClub = ref<Club | null>(null)
 const recommendation = ref<Recommendation | null>(null)
@@ -36,9 +43,15 @@ function setCourse(course: Course | null) {
 
 function setRoundId(roundId: number | null) {
   selectedRoundId.value = roundId
+  activeRoundValidated.value = true
   if (typeof window !== 'undefined') {
-    if (roundId !== null) localStorage.setItem('aigc_active_round_id', String(roundId))
-    else localStorage.removeItem('aigc_active_round_id')
+    if (roundId !== null) {
+      localStorage.setItem('aigc_active_round_id', String(roundId))
+      localStorage.setItem('aigc_round_in_progress', 'true')
+    } else {
+      localStorage.removeItem('aigc_active_round_id')
+      localStorage.removeItem('aigc_round_in_progress')
+    }
   }
 }
 
@@ -64,6 +77,7 @@ function setConditions(nextConditions: Conditions) {
 
 export const roundStore = {
   selectedRoundId: computed(() => selectedRoundId.value),
+  hasActiveRound: computed(() => activeRoundValidated.value && selectedRoundId.value !== null),
   selectedCourse: computed(() => selectedCourse.value),
   selectedHole: computed(() => selectedHole.value),
   selectedClub: computed(() => selectedClub.value),

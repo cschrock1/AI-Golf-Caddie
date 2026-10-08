@@ -24,7 +24,7 @@ import { roundStore } from '../stores/round'
 const route = useRoute()
 const router = useRouter()
 
-const hasActiveRound = computed(() => roundStore.selectedRoundId.value !== null)
+const hasActiveRound = computed(() => roundStore.hasActiveRound.value)
 const navItems = computed(() => [
   { label: 'Home', to: '/dashboard', icon: '⌂' },
   ...(hasActiveRound.value ? [{ label: 'GPS', to: '/hole', icon: '◎' }] : []),

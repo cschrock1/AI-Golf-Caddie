@@ -27,8 +27,7 @@
               <p class="mt-2 text-3xl font-black text-white">{{ scores.length }}<span class="ml-1 text-sm font-semibold text-[#91a69a]">/ {{ holes.length }} mapped</span></p>
             </div>
           </div>
-          <p class="mt-3 text-xs leading-5 text-white/50">Only imported hole data is included. This course currently has {{ holes.length }} mapped {{ holes.length === 1 ? 'hole' : 'holes' }}.</p>
-        </section>
+                </section>
 
         <section class="mt-4 rounded-[28px] border border-white/10 bg-[#0d1d16] p-5 sm:p-6">
           <div class="flex items-center justify-between gap-3">
