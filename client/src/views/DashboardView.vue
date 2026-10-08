@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '../components/AppHeader.vue'
 import CourseSearch from '../components/CourseSearch.vue'
@@ -51,11 +51,7 @@ const scoreTrend = ref<{ title: string; detail: string } | null>(null)
 
 const userName = computed(() => authStore.user.value?.full_name || 'Golfer')
 const firstName = computed(() => userName.value.split(/\s+/)[0])
-const averageScore = computed(() => {
-  const completed = rounds.value.filter((round) => round.is_complete !== false && typeof round.score === 'number')
-  if (!completed.length) return '—'
-  return Math.round(completed.reduce((sum, round) => sum + round.score!, 0) / completed.length)
-})
+const averageScore = ref<string | number>('—')
 const handicap = ref('—')
 
 function selectCourse(course: Course) {
@@ -102,6 +98,69 @@ async function loadScoreTrend(completedRounds: Round[]) {
   }
 }
 
+async function computeAverageFromRounds(currentRounds: Round[]) {
+  const me = authStore.user.value
+  if (!me) {
+    averageScore.value = '—'
+    return
+  }
+
+  // consider all rounds returned; prefer server-stored round totals when available
+  const candidates = currentRounds
+  if (!candidates.length) {
+    averageScore.value = '—'
+    return
+  }
+
+  let totalSum = 0
+  let count = 0
+
+  // first pass: use any server-stored round.score when present and valid
+  for (const r of candidates) {
+    if (typeof r.score === 'number') {
+      totalSum += r.score
+      count += 1
+    }
+  }
+
+  // second pass: for rounds without stored score, fetch their per-hole scores and include only those with 18 numeric entries
+  const toFetch = candidates.filter((r) => typeof r.score !== 'number')
+  if (toFetch.length) {
+    const results = await Promise.allSettled(toFetch.map((r) => getRoundScores(r.id)))
+    results.forEach((res, idx) => {
+      if (res.status !== 'fulfilled') return
+      const scores = res.value.data
+      if (!scores || scores.length < 18) return
+      if (!scores.every((s) => typeof s.strokes === 'number')) return
+      const roundTotal = scores.reduce((s, it) => s + it.strokes, 0)
+      totalSum += roundTotal
+      count += 1
+    })
+  }
+
+  if (count === 0) {
+    averageScore.value = '—'
+    return
+  }
+  const avg = totalSum / count
+  averageScore.value = Number.isInteger(avg) ? Math.round(avg) : Number(avg.toFixed(1))
+}
+
+function handleRoundsUpdate() {
+  const me = authStore.user.value
+  if (!me) return
+  // refresh rounds from server and recompute
+  void getRounds(me.id).then((resp) => {
+    rounds.value = resp.data
+    void computeAverageFromRounds(resp.data)
+    void loadScoreTrend(resp.data)
+  }).catch(() => {
+    rounds.value = []
+    averageScore.value = '—'
+    scoreTrend.value = null
+  })
+}
+
 onMounted(async () => {
   const me = authStore.user.value
   if (!me) return
@@ -114,10 +173,19 @@ onMounted(async () => {
     rounds.value = roundsResponse.data
     handicap.value = profileResponse.data.handicap ?? '—'
     void loadScoreTrend(roundsResponse.data)
+    void computeAverageFromRounds(roundsResponse.data)
+    // listen for round/score changes elsewhere in the app
+    window.addEventListener('round:completed', handleRoundsUpdate)
+    window.addEventListener('scores:updated', handleRoundsUpdate)
   } catch {
     rounds.value = []
     handicap.value = '—'
     scoreTrend.value = null
   }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('round:completed', handleRoundsUpdate)
+  window.removeEventListener('scores:updated', handleRoundsUpdate)
 })
 </script>

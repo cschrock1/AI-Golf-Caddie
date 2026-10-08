@@ -451,6 +451,8 @@ async function saveScore() {
     const response = await saveRoundScores(userId, roundId.value, [{ hole_id: hole.value.id, strokes: scoreEntry.value }])
     holeScore.value = response.data[0]?.strokes ?? scoreEntry.value
     showScoreDialog.value = false
+    // notify dashboard that a score was updated
+    try { window.dispatchEvent(new CustomEvent('scores:updated')) } catch {}
   } catch (requestError: any) {
     scoreError.value = requestError?.response?.data?.detail || 'Unable to save this score.'
   } finally {
@@ -475,6 +477,8 @@ async function endRound() {
   endRoundError.value = ''
   try {
     await completeRound(roundId.value)
+    // notify dashboard that a round was completed
+    try { window.dispatchEvent(new CustomEvent('round:completed', { detail: { roundId: roundId.value } })) } catch {}
     showTools.value = false
     await router.push({ path: '/round-summary', query: { round: String(roundId.value) } })
   } catch (requestError: any) {

@@ -321,8 +321,10 @@ async function saveChanges() {
     messageClass.value = 'text-[#8ca49a]'
     editing.value = false
     clearDraft()
-    emit('scoresSaved')
-    emit('totalUpdated', currentTotal())
+      emit('scoresSaved')
+      emit('totalUpdated', currentTotal())
+      // notify other views (dashboard) that scores changed
+      try { window.dispatchEvent(new CustomEvent('scores:updated')) } catch {}
   } catch (err: any) {
     if (err?.response) {
       message.value = `${err.response.status} ${err.response.data?.detail || err.response.statusText}`
