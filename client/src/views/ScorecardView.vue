@@ -49,7 +49,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import AppHeader from '../components/AppHeader.vue'
 import ScorecardTable from '../components/ScorecardTable.vue'
-import { createRound, getCourses, getCourseHoles, getRounds } from '../services/api'
+import { getCourses, getCourseHoles, getRounds } from '../services/api'
 import { roundStore } from '../stores/round'
 import { authStore } from '../stores/auth'
 import type { Course } from '../types'
@@ -115,31 +115,8 @@ onMounted(async () => {
       const holeResponse = await getCourseHoles(activeCourse.id)
       holes.value = toScorecardHoles(holeResponse.data)
     } else {
-      const preferredId = roundStore.selectedCourse.value?.id
-      const sortedCourses = [...coursesResponse.data].sort((a, b) => Number(b.id === preferredId) - Number(a.id === preferredId))
-      let mappedHoles: Awaited<ReturnType<typeof getCourseHoles>>['data'] = []
-      for (const candidate of sortedCourses) {
-        const response = await getCourseHoles(candidate.id)
-        if (response.data.length) {
-          activeCourse = candidate
-          mappedHoles = response.data
-          break
-        }
-      }
-      if (!activeCourse) throw new Error('No course holes are mapped yet. Import a mapped hole before starting a scorecard.')
-
-      const newRound = await createRound({
-        user_id: user.id,
-        course_id: activeCourse.id,
-        date: new Date().toISOString().slice(0, 10),
-        score: null
-      })
-      roundId.value = newRound.data.id
-      roundDate.value = formatRoundDate(newRound.data.date)
-      courseName.value = activeCourse.name
-      roundStore.setCourse(activeCourse)
-      roundStore.setRoundId(newRound.data.id)
-      holes.value = toScorecardHoles(mappedHoles)
+      roundStore.setRoundId(null)
+      throw new Error('Start a round from Home to open its scorecard.')
     }
 
     if (!holes.value.length) loadError.value = 'This course has no scorecard hole data yet.'

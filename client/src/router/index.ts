@@ -34,7 +34,7 @@ router.beforeEach(async (to) => {
   }
 
   if ((to.path === '/login' || to.path === '/register') && isAuthenticated) {
-    return { path: '/hole' }
+    return { path: '/dashboard' }
   }
 })
 

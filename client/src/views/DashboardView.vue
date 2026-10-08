@@ -41,7 +41,7 @@ import { useRouter } from 'vue-router'
 import AppHeader from '../components/AppHeader.vue'
 import CourseSearch from '../components/CourseSearch.vue'
 import { authStore } from '../stores/auth'
-import { getGolferProfile, getRoundScores, getRounds } from '../services/api'
+import { getCourses, getGolferProfile, getRoundScores, getRounds } from '../services/api'
 import { roundStore } from '../stores/round'
 import type { Course, Round, RoundScore } from '../types'
 
@@ -107,17 +107,30 @@ onMounted(async () => {
   if (!me) return
 
   try {
-    const [roundsResponse, profileResponse] = await Promise.all([
+    const [roundsResponse, profileResponse, coursesResponse] = await Promise.all([
       getRounds(me.id),
-      getGolferProfile(me.id)
+      getGolferProfile(me.id),
+      getCourses()
     ])
     rounds.value = roundsResponse.data
     handicap.value = profileResponse.data.handicap ?? '—'
+    const openRounds = roundsResponse.data
+      .filter((round) => !round.is_complete)
+      .sort((a, b) => b.id - a.id)
+    const activeRound = openRounds.find((round) => round.id === roundStore.selectedRoundId.value) || openRounds[0]
+    if (activeRound) {
+      roundStore.setRoundId(activeRound.id)
+      const activeCourse = coursesResponse.data.find((course) => course.id === activeRound.course_id)
+      if (activeCourse) roundStore.setCourse(activeCourse)
+    } else {
+      roundStore.setRoundId(null)
+    }
     void loadScoreTrend(roundsResponse.data)
   } catch {
     rounds.value = []
     handicap.value = '—'
     scoreTrend.value = null
+    roundStore.setRoundId(null)
   }
 })
 </script>

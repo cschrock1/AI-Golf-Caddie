@@ -328,9 +328,12 @@ async function loadHoleData() {
       )
       if (activeRound) roundStore.setRoundId(activeRound.id)
       else {
-        if (isStartingNewRound) {
-          roundStore.setConditions({ ...conditions.value, playerLocation: null, holeDistance: null, locationAccuracy: null })
+        if (!isStartingNewRound) {
+          roundStore.setRoundId(null)
+          await router.replace('/dashboard')
+          return
         }
+        roundStore.setConditions({ ...conditions.value, playerLocation: null, holeDistance: null, locationAccuracy: null })
         const newRound = await createRound({ user_id: user.id, course_id: selectedCourse.id, date: new Date().toISOString().slice(0, 10) })
         roundStore.setRoundId(newRound.data.id)
         if (isStartingNewRound) {
@@ -475,6 +478,7 @@ async function endRound() {
   endRoundError.value = ''
   try {
     await completeRound(roundId.value)
+    roundStore.setRoundId(null)
     showTools.value = false
     await router.push({ path: '/round-summary', query: { round: String(roundId.value) } })
   } catch (requestError: any) {
