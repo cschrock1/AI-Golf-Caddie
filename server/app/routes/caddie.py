@@ -1,7 +1,7 @@
 import logging
 from urllib.error import URLError
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from geoalchemy2.shape import to_shape
 from sqlalchemy.orm import Session
 
@@ -9,9 +9,9 @@ from app.core.security import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.routes.recommendations import recommend_shot
-from app.schemas.caddie import CaddieExplainRequest, CaddieExplainResponse
+from app.schemas.caddie import CaddieChatRequest, CaddieChatResponse, CaddieExplainRequest, CaddieExplainResponse
 from app.schemas.recommendation import RecommendationRequest
-from app.services.caddie import explain_recommendation
+from app.services.caddie import answer_general_question, explain_recommendation
 from app.models.hole import Hole
 from app.services.weather import get_current_weather
 
@@ -40,7 +40,8 @@ def explain_shot(
             weather = get_current_weather(point.y, point.x)
         except (URLError, TimeoutError, OSError, ValueError):
             logger.info("Live conditions were unavailable for the caddie explanation")
-    explanation, source = explain_recommendation(request.question, recommendation, weather)
+    conversation = [message.model_dump() for message in request.conversation]
+    explanation, source = explain_recommendation(request.question, recommendation, weather, conversation)
     if source == "rules":
         logger.info("Using deterministic caddie explanation fallback")
     return {
@@ -48,3 +49,17 @@ def explain_shot(
         "explanation": explanation,
         "explanation_source": source,
     }
+
+
+@router.post("/chat", response_model=CaddieChatResponse)
+def chat(
+    request: CaddieChatRequest,
+    current_user: User = Depends(get_current_user),
+):
+    conversation = [message.model_dump() for message in request.conversation]
+    try:
+        answer, source = answer_general_question(request.question, conversation)
+    except RuntimeError as error:
+        logger.warning("General caddie chat is unavailable: %s", error)
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from error
+    return {"answer": answer, "answer_source": source}

@@ -125,3 +125,8 @@ export interface ChatMessage {
   timestamp: string
   provider?: string
 }
+
+export interface CaddieConversationMessage {
+  role: 'user' | 'assistant'
+  content: string
+}

@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import type { Club, Conditions, Course, Recommendation } from '../types'
+import type { ChatMessage, Club, Conditions, Course, Recommendation } from '../types'
 
 function storedCourse() {
   if (typeof window === 'undefined') return null
@@ -32,6 +32,59 @@ const selectedHole = ref<number>(1)
 const selectedClub = ref<Club | null>(null)
 const recommendation = ref<Recommendation | null>(null)
 const conditions = ref<Conditions>({})
+const caddieChatMessages = ref<ChatMessage[]>([])
+let caddieChatIdentity: string | null = null
+let caddieChatStorageKey: string | null = null
+
+function setCaddieChatContext(userId: number, roundId: number | null, holeNumber: number) {
+  const identity = `${userId}:${roundId ?? 'general'}:${roundId === null ? 'all' : holeNumber}`
+  if (identity === caddieChatIdentity) return
+
+  caddieChatIdentity = identity
+  caddieChatStorageKey = `aigc_caddie_chat_${userId}_${roundId ?? 'general'}`
+  if (typeof window === 'undefined') {
+    caddieChatMessages.value = []
+    return
+  }
+
+  let parsed: {
+    roundId: number | null
+    holeNumber: number | null
+    messages: ChatMessage[]
+  } | null = null
+  try {
+    const stored = localStorage.getItem(caddieChatStorageKey)
+    parsed = stored ? JSON.parse(stored) as {
+      roundId: number | null
+      holeNumber: number | null
+      messages: ChatMessage[]
+    } : null
+  } catch {
+    parsed = null
+  }
+  caddieChatMessages.value = parsed
+    && parsed.roundId === roundId
+    && parsed.holeNumber === (roundId === null ? null : holeNumber)
+    && Array.isArray(parsed.messages)
+    ? parsed.messages
+    : []
+  saveCaddieChat()
+}
+
+function saveCaddieChat() {
+  if (typeof window === 'undefined' || !caddieChatStorageKey || !caddieChatIdentity) return
+  const [, roundKey, holeKey] = caddieChatIdentity.split(':')
+  localStorage.setItem(caddieChatStorageKey, JSON.stringify({
+    roundId: roundKey === 'general' ? null : Number(roundKey),
+    holeNumber: roundKey === 'general' ? null : Number(holeKey),
+    messages: caddieChatMessages.value
+  }))
+}
+
+function addCaddieChatMessage(message: ChatMessage) {
+  caddieChatMessages.value.push(message)
+  saveCaddieChat()
+}
 
 function setCourse(course: Course | null) {
   selectedCourse.value = course
@@ -83,11 +136,14 @@ export const roundStore = {
   selectedClub: computed(() => selectedClub.value),
   recommendation: computed(() => recommendation.value),
   conditions: computed(() => conditions.value),
+  caddieChatMessages: computed(() => caddieChatMessages.value),
   setRoundId,
   setCourse,
   setHole,
   setClub,
   setRecommendation,
   clearRecommendation,
-  setConditions
+  setConditions,
+  setCaddieChatContext,
+  addCaddieChatMessage
 }

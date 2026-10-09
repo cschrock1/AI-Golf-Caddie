@@ -1,6 +1,6 @@
 import axios, { type AxiosInstance } from 'axios'
 import { Capacitor } from '@capacitor/core'
-import type { Club, Conditions, Course, GolferProfile, Hole, Recommendation, Round, RoundScore, Shot, User } from '../types'
+import type { CaddieConversationMessage, Club, Conditions, Course, GolferProfile, Hole, Recommendation, Round, RoundScore, Shot, User } from '../types'
 
 const configuredBaseURL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
 const baseURL = Capacitor.isNativePlatform()
@@ -59,12 +59,22 @@ export const getCurrentWeather = async (courseId: number, holeNumber: number) =>
   }
   return { ...response, data: weather }
 }
-export const getCaddieExplanation = async (holeId: number, playerLocation: [number, number], question: string) =>
-  api.post<{
+export const getCaddieExplanation = async (
+  holeId: number,
+  playerLocation: [number, number],
+  question: string,
+  conversation: CaddieConversationMessage[]
+) => api.post<{
     recommendation: Recommendation
     explanation: string
-    explanation_source: 'openai' | 'rules'
-  }>('/caddie/explain', { hole_id: holeId, player_location: playerLocation, question })
+    explanation_source: 'openai' | 'gemini' | 'rules'
+  }>('/caddie/explain', { hole_id: holeId, player_location: playerLocation, question, conversation })
+export const getGeneralCaddieAnswer = async (question: string, conversation: CaddieConversationMessage[]) =>
+  api.post<{ answer: string; answer_source: 'openai' | 'gemini' | 'rules' }>(
+    '/caddie/chat',
+    { question, conversation },
+    { timeout: 30_000 }
+  )
 export const getRoundScores = async (roundId: number) => api.get<RoundScore[]>('/round_scores/', { params: { round_id: roundId } })
 export const saveRoundScores = async (userId: number, roundId: number, scores: Array<{ hole_id?: number; hole_number?: number; strokes: number }>) =>
   api.post<RoundScore[]>('/round_scores/batch', scores, { params: { user_id: userId, round_id: roundId } })

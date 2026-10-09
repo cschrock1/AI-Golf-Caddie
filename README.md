@@ -34,6 +34,12 @@ Copy `.env.example` to `.env` in the project root. Its database settings are con
 docker compose up --build
 ```
 
+After adding or changing an AI provider key in `.env`, restart the API container so it picks up the new value:
+
+```bash
+docker compose up -d --build backend
+```
+
 On the first run Docker downloads the database image and builds the API image. The API applies database migrations and loads development sample data. Keep this terminal open.
 
 ### Start the web frontend
@@ -99,11 +105,11 @@ If Render assigns different URLs in a future deployment, update these two enviro
 
 `.env.example` is for local development. In Render, configure variables on the matching service instead of uploading or committing `.env`:
 
-- API service: `DATABASE_URL`, `JWT_SECRET_KEY`, `CORS_ORIGINS`, optional `GOLF_API_KEY`, and optional `OPENAI_API_KEY`.
+- API service: `DATABASE_URL`, `JWT_SECRET_KEY`, `CORS_ORIGINS`, optional `GOLF_API_KEY`, and an optional AI provider key (`GOOGLE_API_KEY` or `OPENAI_API_KEY`). Gemini is used when both provider keys are set. The default `gemini-3.5-flash-lite` model is retried with `gemini-3.1-flash-lite` after temporary Gemini 503 responses; set `GOOGLE_MODEL` and `GOOGLE_FALLBACK_MODEL` to use different models. `OPENAI_MODEL` configures the OpenAI fallback.
 - Frontend static site: `VITE_API_BASE_URL` and optional `VITE_MAPBOX_TOKEN`.
 - Native iOS app: `VITE_MOBILE_API_URL` is compiled into the app; rebuild/sync the app after changing it.
 
-Course search/data from the Golf API requires `GOLF_API_KEY`. Maps require a public Mapbox token in `VITE_MAPBOX_TOKEN`; restrict the token to the website's domain. AI-written recommendation explanations can use `OPENAI_API_KEY`; without it, the app uses its built-in explanation. Weather lookup uses Open-Meteo and needs internet access.
+Course search/data from the Golf API requires `GOLF_API_KEY`. Maps require a public Mapbox token in `VITE_MAPBOX_TOKEN`; restrict the token to the website's domain. AI-written general chat and recommendation explanations use Gemini when `GOOGLE_API_KEY` is configured, or OpenAI when only `OPENAI_API_KEY` is configured. Without either key, the app uses its built-in recommendation explanation and general AI chat is unavailable. Weather lookup uses Open-Meteo and needs internet access.
 
 Keep `DATABASE_URL`, `JWT_SECRET_KEY`, and provider API secrets private. Variables beginning with `VITE_` are included in the browser build and must not contain secrets.
 
