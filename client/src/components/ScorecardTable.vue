@@ -5,13 +5,7 @@
         <p class="text-[10px] uppercase tracking-[0.24em] text-[#8ca49a]">Round</p>
         <p class="mt-1 text-lg font-black text-white">{{ courseName }}</p>
       </div>
-      <div class="flex items-center gap-2">
-        <button v-if="!editing" type="button" @click="startEditing" class="rounded-full border border-[#274536] bg-[#0d2119] px-3 py-1 text-[12px] font-black uppercase tracking-[0.12em] text-[#c8ff00]">Edit Scores</button>
-        <div v-else class="flex gap-2">
-          <button type="button" @click="saveChanges" :disabled="saving" class="rounded-full border border-[#274536] bg-[#0d2119] px-3 py-1 text-[12px] font-black uppercase tracking-[0.12em] text-[#c8ff00]">Save Changes</button>
-          <button type="button" @click="cancelEditing" :disabled="saving" class="rounded-full border border-[#274536] bg-transparent px-3 py-1 text-[12px] font-black uppercase tracking-[0.12em] text-[#c8ff00]">Cancel</button>
-        </div>
-      </div>
+      <span v-if="!readOnly" class="rounded-full border border-[#274536] bg-[#0d2119] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-[#c8ff00]">Auto-saves</span>
     </div>
 
     <div class="overflow-hidden rounded-2xl border border-[#214335]">
@@ -28,13 +22,17 @@
             <td class="px-2 py-3">{{ h.hole ?? h.hole_number ?? (idx + 1) }}</td>
             <td class="px-2 py-3">{{ h.par }}</td>
             <td class="px-2 py-3 font-semibold">
-              <div v-if="editing" class="w-20">
+              <div v-if="!readOnly" class="w-20">
                 <input
                   v-model="h.strokesInput"
+                  @input="queueSave(h)"
                   @keydown.enter.prevent="focusNext(idx)"
-                  @blur="normalizeInput(h)"
+                  @blur="saveHole(h)"
                   type="number"
                   min="1"
+                  step="1"
+                  :aria-label="`Score for hole ${h.hole ?? h.hole_number ?? idx + 1}`"
+                  :aria-invalid="h._invalid ? 'true' : 'false'"
                   class="w-full rounded-md border border-[#214335] bg-[#0d2119] px-2 py-1 text-white placeholder-[#8ca49a]"
                 />
               </div>
@@ -67,7 +65,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, watch, onMounted, computed } from 'vue'
+import { reactive, ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
 import { getRoundScores, saveRoundScores } from '../services/api'
 
 const emit = defineEmits<{
@@ -81,6 +79,7 @@ const props = withDefaults(
     holes?: Array<any>
     roundId?: number | null
     userId?: number | null
+    readOnly?: boolean
   }>(),
   {
     courseName: 'Stonehenge Golf Course',
@@ -88,14 +87,14 @@ const props = withDefaults(
       { hole: 1, par: 4, strokes: null }
     ],
     roundId: null,
-    userId: null
+    userId: null,
+    readOnly: false
   }
 )
 
-const editing = ref(false)
-const saving = ref(false)
 const message = ref('')
 const messageClass = ref('text-[#8ca49a] bg-transparent')
+const saveTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
 // local copy with strokesInput for editing
 const holesLocal = reactive((props.holes || []).map(h => ({ ...h, strokesInput: h.strokes ?? h.score ?? '' })))
@@ -108,8 +107,11 @@ function draftKey() {
 
 function saveDraft() {
   try {
-    const data = JSON.stringify(holesLocal.map(h => ({ hole: h.hole ?? h.hole_number ?? null, par: h.par ?? null, strokesInput: h.strokesInput ?? '' })))
-    localStorage.setItem(draftKey(), data)
+    const unsaved = holesLocal
+      .filter(h => String(h.strokesInput ?? '').trim() !== String(h.strokes ?? h.score ?? '').trim())
+      .map(h => ({ hole: h.hole ?? h.hole_number ?? null, par: h.par ?? null, strokesInput: h.strokesInput ?? '' }))
+    if (unsaved.length) localStorage.setItem(draftKey(), JSON.stringify(unsaved))
+    else localStorage.removeItem(draftKey())
   } catch {
     // ignore
   }
@@ -123,10 +125,6 @@ function loadDraft() {
   } catch {
     return null
   }
-}
-
-function clearDraft() {
-  try { localStorage.removeItem(draftKey()) } catch {}
 }
 
 function restoreDraft() {
@@ -180,40 +178,67 @@ onMounted(loadScores)
 watch(() => [props.roundId, props.userId], loadScores)
 
 watch(() => props.holes, (next) => {
-  // reset local copy if holes prop changes, but do not overwrite while editing
-  if (editing.value) return
   holesLocal.splice(0, holesLocal.length, ...(next || []).map(h => ({ ...h, strokesInput: h.strokes ?? h.score ?? '' })))
 })
 
-// persist draft while editing so switching tabs doesn't lose inputs
 watch(holesLocal, () => {
-  if (editing.value) saveDraft()
+  if (!props.readOnly) saveDraft()
 }, { deep: true })
 
-function startEditing() {
-  message.value = ''
-  editing.value = true
+function holeKey(h: any) {
+  return String(h.hole_id ?? h.hole ?? h.hole_number ?? 'unknown')
 }
 
-function cancelEditing() {
-  // restore from original prop values or saved strokes
-  holesLocal.forEach((h, idx) => {
-    const original = (props.holes || [])[idx]
-    h.strokesInput = original ? (original.strokes ?? original.score ?? '') : ''
-  })
-  editing.value = false
-  clearDraft()
+function queueSave(h: any) {
+  if (props.readOnly) return
+  const key = holeKey(h)
+  const previousTimer = saveTimers.get(key)
+  if (previousTimer) clearTimeout(previousTimer)
+  saveTimers.set(key, setTimeout(() => { void saveHole(h) }, 650))
 }
 
-function normalizeInput(h: any) {
-  const v = Number(h.strokesInput)
-  if (!Number.isFinite(v) || v <= 0) {
-    // invalid - keep input but mark
+async function saveHole(h: any) {
+  if (props.readOnly) return
+  const key = holeKey(h)
+  const timer = saveTimers.get(key)
+  if (timer) clearTimeout(timer)
+  saveTimers.delete(key)
+
+  const input = String(h.strokesInput ?? '').trim()
+  if (!input) return
+  const strokes = Number(input)
+  if (!Number.isInteger(strokes) || strokes <= 0) {
     h._invalid = true
-  } else {
-    h._invalid = false
-    h.strokes = Math.trunc(v)
-    h.strokesInput = String(h.strokes)
+    message.value = 'Enter a whole-number score greater than 0.'
+    messageClass.value = 'text-[#f19b66]'
+    return
+  }
+  h._invalid = false
+
+  const holeNumber = h.hole ?? h.hole_number
+  const payload = [{ hole_id: h.hole_id, hole_number: holeNumber, strokes }]
+  message.value = `Saving Hole ${holeNumber}…`
+  messageClass.value = 'text-[#8ca49a]'
+
+  try {
+    if (props.roundId && props.userId) {
+      await saveRoundScores(props.userId, props.roundId, payload)
+    }
+    h.strokes = strokes
+    h.strokesInput = String(strokes)
+    saveDraft()
+    message.value = `Hole ${holeNumber} saved.`
+    messageClass.value = 'text-[#8ca49a]'
+    emit('scoresSaved')
+    emit('totalUpdated', currentTotal())
+    if (props.roundId && props.userId) {
+      try { window.dispatchEvent(new CustomEvent('scores:updated')) } catch {}
+    }
+  } catch (err: any) {
+    message.value = err?.response
+      ? `${err.response.status} ${err.response.data?.detail || err.response.statusText}`
+      : err?.message || 'Failed to save this score.'
+    messageClass.value = 'text-[#f19b66]'
   }
 }
 
@@ -274,66 +299,13 @@ const relativeToPar = computed(() => {
   return diff > 0 ? `+${diff}` : `${diff}`
 })
 
-async function saveChanges() {
-  const payload: Array<{ hole_id?: number; hole_number?: number; strokes: number }> = []
-  for (const h of holesLocal) {
-    const input = String(h.strokesInput ?? '').trim()
-    if (!input) continue
-
-    const v = Number(input)
-    if (!Number.isInteger(v) || v <= 0) {
-      message.value = 'Please enter valid whole-number scores greater than 0.'
-      messageClass.value = 'text-[#f19b66]'
-      return
+onBeforeUnmount(() => {
+  for (const timer of saveTimers.values()) clearTimeout(timer)
+  saveTimers.clear()
+  if (!props.readOnly) {
+    for (const h of holesLocal) {
+      if (String(h.strokesInput ?? '').trim() !== String(h.strokes ?? h.score ?? '').trim()) void saveHole(h)
     }
-    payload.push({ hole_id: h.hole_id, hole_number: h.hole ?? h.hole_number, strokes: Math.trunc(v) })
   }
-
-  if (!props.roundId || !props.userId) {
-    payload.forEach((p) => {
-      const hole = holesLocal.find(h => (h.hole ?? h.hole_number) === p.hole_number)
-      if (hole) {
-        hole.strokes = p.strokes
-        hole.strokesInput = String(p.strokes)
-      }
-    })
-    message.value = 'Scorecard saved locally.'
-    messageClass.value = 'text-[#8ca49a]'
-    editing.value = false
-    emit('scoresSaved')
-    emit('totalUpdated', currentTotal())
-    return
-  }
-
-  saving.value = true
-  message.value = ''
-  try {
-    await saveRoundScores(props.userId, props.roundId, payload)
-    // apply saved values
-    payload.forEach((p) => {
-      const hole = holesLocal.find(h => (h.hole ?? h.hole_number) === p.hole_number)
-      if (hole) {
-        hole.strokes = p.strokes
-        hole.strokesInput = String(p.strokes)
-      }
-    })
-    message.value = 'Scorecard saved.'
-    messageClass.value = 'text-[#8ca49a]'
-    editing.value = false
-    clearDraft()
-      emit('scoresSaved')
-      emit('totalUpdated', currentTotal())
-      // notify other views (dashboard) that scores changed
-      try { window.dispatchEvent(new CustomEvent('scores:updated')) } catch {}
-  } catch (err: any) {
-    if (err?.response) {
-      message.value = `${err.response.status} ${err.response.data?.detail || err.response.statusText}`
-    } else {
-      message.value = err?.message || 'Failed to save scores.'
-    }
-    messageClass.value = 'text-[#f19b66]'
-  } finally {
-    saving.value = false
-  }
-}
+})
 </script>

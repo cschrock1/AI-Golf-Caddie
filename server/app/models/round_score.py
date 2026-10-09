@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -6,6 +6,9 @@ from app.db.base import Base
 
 class RoundScore(Base):
     __tablename__ = "round_scores"
+    __table_args__ = (
+        UniqueConstraint("round_id", "hole_id", name="uq_round_scores_round_hole"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
 

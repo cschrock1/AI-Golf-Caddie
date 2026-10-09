@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -53,7 +54,7 @@ def upsert_round_scores(
     if db_round.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to modify this round")
 
-    results: list[RoundScore] = []
+    resolved_scores: dict[int, int] = {}
     for score in scores:
         hole = None
         if score.hole_id:
@@ -68,23 +69,22 @@ def upsert_round_scores(
         if not hole:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Hole not found for input {score.hole_id or score.hole_number}")
 
-        db_score = db.query(RoundScore).filter(
-            RoundScore.round_id == round_id,
-            RoundScore.hole_id == hole.id
-        ).first()
+        # If a batch repeats a hole, the last supplied score wins.
+        resolved_scores[hole.id] = score.strokes
 
-        if db_score:
-            db_score.strokes = score.strokes
-        else:
-            db_score = RoundScore(round_id=round_id, hole_id=hole.id, strokes=score.strokes)
-            db.add(db_score)
-
-        results.append(db_score)
+    results: list[RoundScore] = []
+    for hole_id, strokes in resolved_scores.items():
+        statement = (
+            insert(RoundScore)
+            .values(round_id=round_id, hole_id=hole_id, strokes=strokes)
+            .on_conflict_do_update(
+                index_elements=[RoundScore.round_id, RoundScore.hole_id],
+                set_={"strokes": strokes},
+            )
+            .returning(RoundScore)
+        )
+        results.append(db.execute(statement).scalar_one())
 
     db.commit()
-
-    # refresh objects
-    for r in results:
-        db.refresh(r)
 
     return [serialize_score(score) for score in results]

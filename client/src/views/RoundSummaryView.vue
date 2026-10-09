@@ -24,7 +24,7 @@
             </div>
             <div class="col-span-2 rounded-2xl border border-white/10 bg-black/20 p-4 sm:col-span-1">
               <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-[#91a69a]">Holes scored</p>
-              <p class="mt-2 text-3xl font-black text-white">{{ scores.length }}<span class="ml-1 text-sm font-semibold text-[#91a69a]">/ {{ holes.length }} mapped</span></p>
+              <p class="mt-2 text-3xl font-black text-white">{{ scoredScores.length }}<span class="ml-1 text-sm font-semibold text-[#91a69a]">/ {{ holes.length }} mapped</span></p>
             </div>
           </div>
                 </section>
@@ -72,10 +72,18 @@ const scores = ref<RoundScore[]>([])
 const shots = ref<Shot[]>([])
 const clubs = ref<Club[]>([])
 const firstName = computed(() => authStore.user.value?.full_name?.trim().split(/\s+/)[0] || 'Golfer')
-const totalStrokes = computed(() => scores.value.reduce((total, score) => total + score.strokes, 0) || round.value?.score || null)
+const scoredScores = computed(() => {
+  const mappedHoleIds = new Set(holes.value.map((hole) => hole.id))
+  const latestScoreByHole = new Map<number, RoundScore>()
+  for (const score of [...scores.value].sort((first, second) => first.id - second.id)) {
+    if (mappedHoleIds.has(score.hole_id)) latestScoreByHole.set(score.hole_id, score)
+  }
+  return [...latestScoreByHole.values()]
+})
+const totalStrokes = computed(() => scoredScores.value.reduce((total, score) => total + score.strokes, 0) || round.value?.score || null)
 const toPar = computed(() => {
   if (totalStrokes.value == null) return '—'
-  const parTotal = scores.value.reduce((total, score) => {
+  const parTotal = scoredScores.value.reduce((total, score) => {
     const hole = holes.value.find((item) => item.id === score.hole_id)
     return total + (hole?.par ?? 0)
   }, 0)

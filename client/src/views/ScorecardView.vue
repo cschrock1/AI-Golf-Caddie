@@ -37,6 +37,7 @@
         :holes="holes"
         :round-id="roundId"
         :user-id="userId"
+        :read-only="isHistoricalRound"
         @total-updated="updateLiveTotal"
       />
       <p class="mt-3 text-xs leading-5 text-[#91a69a]">Showing {{ holes.length }} scorecard {{ holes.length === 1 ? 'hole' : 'holes' }}. GPS mapping is currently available for Hole 1 only.</p>
